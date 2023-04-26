@@ -29,7 +29,7 @@ class CardAggregate {
         return new CardAggregate(cards);
     }
 
-    handOverCards(playerAggregate: PlayerAggregate) {
+    handOverCards(playerAggregate: PlayerAggregate): [CardAggregate, PlayerAggregate] {
         const cardNum = 5;
         const cards = this.cards.slice();
         const newCardAggregate = new CardAggregate(cards)

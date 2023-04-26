@@ -6,37 +6,43 @@ class TableBase implements Model {
     protected _cardAggregate;
     protected _playerAggregate;
     protected _turn;
+    protected static nextId = 0;
+    protected _id;
 
-    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, turn: number = 0) {
+    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id = TableBase.nextId, turn: number = 0) {
         this._cardAggregate = cardAggregate;
         this._playerAggregate = playerAggregate;
         this._turn = turn;
+        this._id = id;
+        TableBase.nextId++;
     }
 
     addPlayer(player: Player) {
         const newPlayerAggregate = this.playerAggregate.addPlayer(player);
-        return [this.cardAggregate, newPlayerAggregate];
+        return new TableBase(this.cardAggregate, newPlayerAggregate, this.id);
     }
 
     shuffle() {
         const newCardAggregate = this.cardAggregate.shuffle()
 
-        return [newCardAggregate, this.playerAggregate];
+        return new TableBase(newCardAggregate, this.playerAggregate, this.id);
     }
 
     handOverCards() {
-        return this.cardAggregate.handOverCards(this.playerAggregate);
+        const [newCardAggregate, newPlayerAggregate] = this.cardAggregate.handOverCards(this.playerAggregate);
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.id);
     }
 
     drawCard() {
-        return this.playerAggregate.drawCard(this.cardAggregate, this.turn);
+        const [newCardAggregate, newPlayerAggregate] =  this.playerAggregate.drawCard(this.cardAggregate, this.turn);
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.turn);
     }
 
     discard(card: CardBase) {
         const newPlayerAggregate = this.playerAggregate.discard(card, this.turn);
         const newCardAggregate = this.cardAggregate.addDiscard(card);
         const turn = this.nextTurn();
-        return [newCardAggregate, newPlayerAggregate, turn];
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, turn)
     }
 
     protected nextTurn() {
@@ -67,8 +73,12 @@ class TableBase implements Model {
         return this._turn;
     }
 
+    get id() {
+        return this._id;
+    }
+
     static createCards() {
-        const suits = ['jack', 'spade', 'heart', 'diamond']
+        const suits = ['clover', 'spade', 'heart', 'diamond']
         const cards: CardBase[] = []
 
         for (let i = 0; i < suits.length; i++) {

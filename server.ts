@@ -1,11 +1,10 @@
 // src/server.ts
 import http from 'http';
-import fs from 'fs';
-import path from 'path';
 import url from 'url';
 import { TableController } from './controllers'
 
 const port = 3000;
+const tableController = new TableController()
 
 const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
     const requestUrl = url.parse(req.url || '', true);
@@ -13,10 +12,22 @@ const server = http.createServer((req: http.IncomingMessage, res: http.ServerRes
 
     switch (requestUrl.pathname) {
       case '/':
-        TableController.index(req, res);
+        tableController.index(req, res);
         break;
       case '/create':
-        TableController.create(req, res);
+        tableController.create(req, res);
+        break;
+      case '/join':
+        tableController.joinPlayer(req, res);
+        break;
+      case '/start':
+        tableController.start(req, res);
+        break;
+      case '/draw':
+        tableController.draw(req, res);
+        break;
+      case '/discard':
+        tableController.discard(req, res);
         break;
       default:
         res.writeHead(404, { 'Content-Type': 'text/plain' });

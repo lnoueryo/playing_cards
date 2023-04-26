@@ -25,14 +25,15 @@ class PlayerAggregate {
         return new PlayerAggregate(players)
     }
 
-    drawCard(cardAggregate: CardAggregate, turn: number) {
+    drawCard(cardAggregate: CardAggregate, turn: number): [CardAggregate, PlayerAggregate] {
         const playerCard = cardAggregate.getCardsFromDeck(1)[0];
         const newPlayer = this.players[turn].addCard(playerCard);
         const newPlayers = this.players.slice();
         newPlayers[turn] = newPlayer;
-
         const remainingCards = cardAggregate.cards.slice(1);
-        return [remainingCards, newPlayers];
+        const newCardAggregate = new CardAggregate(remainingCards)
+        const newPlayerAggregate = new PlayerAggregate(newPlayers)
+        return [newCardAggregate, newPlayerAggregate];
     }
 
     discard(card: CardBase, turn: number) {

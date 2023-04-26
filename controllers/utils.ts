@@ -4,7 +4,7 @@ import path from 'path';
 import { Model } from '../models/utils';
 class Controller {
 
-    static httpResponse(res: http.ServerResponse, filename: string) {
+    httpResponse(res: http.ServerResponse, filename: string) {
         const filePath = path.join(__dirname, '..', 'public', filename);
         fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) {
@@ -16,7 +16,7 @@ class Controller {
         });
     }
 
-    static jsonResponse(res: http.ServerResponse, obj: Model | {}) {
+    protected jsonResponse(res: http.ServerResponse, obj: Model | {}) {
         const responseContent = JSON.stringify(obj);
         const contentType = 'application/json';
         res.writeHead(200, { 'Content-Type': contentType });
