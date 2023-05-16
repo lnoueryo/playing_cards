@@ -30,15 +30,16 @@ class TableController extends Controller {
     }
 
     draw(req: http.IncomingMessage, res: http.ServerResponse) {
+        console.log(req)
         this.tables[0] = this.tables[0].drawCard()
-        console.log(this.tables[0].playerAggregate.players[0])
+        console.log(this.tables[0].playerAggregate.players[this.tables[0].turn])
         return super.jsonResponse(res, this.tables[0])
     }
 
     discard(req: http.IncomingMessage, res: http.ServerResponse) {
-        const card = this.tables[0].playerAggregate.players[0].cards[0];
+        const card = this.tables[0].playerAggregate.players[this.tables[0].turn].cards[0];
         this.tables[0] = this.tables[0].discard(card);
-        console.log(this.tables[0].playerAggregate.players[0])
+        console.log(this.tables[0].playerAggregate.players[this.tables[0].turn])
         return super.jsonResponse(res, this.tables[0]);
     }
 
