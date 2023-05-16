@@ -2,12 +2,12 @@ import { PlayerAggregate } from "../player";
 import { CardBase } from "./card";
 class CardAggregate {
 
-    protected _cards;
-    protected _discards;
+    readonly cards;
+    readonly discards;
 
     constructor(cards: CardBase[], discards: CardBase[] = []) {
-        this._cards = cards;
-        this._discards = discards;
+        this.cards = cards;
+        this.discards = discards;
     }
 
     shuffle() {
@@ -45,14 +45,6 @@ class CardAggregate {
         const newDiscards = this.discards.slice();
         newDiscards.push(card);
         return new CardAggregate(this.cards, newDiscards)
-    }
-
-    get cards() {
-        return this._cards;
-    }
-
-    get discards() {
-        return this._discards;
     }
 
 }

@@ -1,12 +1,14 @@
 import { Model } from "../utils";
 import { CardBase } from "../card";
 import { PlayerAggregate } from './player_aggregate'
+
+
 class Player implements Model {
-    protected _name;
-    protected _cards;
+    readonly name;
+    readonly cards;
     constructor(name: string, cards: CardBase[] = []) {
-        this._name = name;
-        this._cards = cards
+        this.name = name;
+        this.cards = cards
     }
     addCard(card: CardBase) {
         const cards = this.cards.slice();
@@ -17,12 +19,7 @@ class Player implements Model {
         const cards = this.cards.filter((card) => card.id != unwantedCard.id);
         return new Player(this.name, cards)
     }
-    get name() {
-        return this._name;
-    }
-    get cards() {
-        return this._cards;
-    }
+
 }
 
 export { Player, PlayerAggregate }

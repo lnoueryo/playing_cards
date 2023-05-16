@@ -1,12 +1,13 @@
 import { Player } from ".";
 import { CardAggregate, CardBase } from "../card";
 
+
 class PlayerAggregate {
 
-    protected _players;
+    readonly players;
 
     constructor(players: Player[] = []) {
-        this._players = players;
+        this.players = players;
     }
 
     addPlayer(player: Player) {
@@ -47,9 +48,6 @@ class PlayerAggregate {
         return turn >= this.players.length;
     }
 
-    get players() {
-        return this._players;
-    }
 }
 
 export { PlayerAggregate }

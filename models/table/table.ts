@@ -3,17 +3,17 @@ import { CardBase, RegularCard, JorkerCard, CardAggregate } from '../card'
 import { Player, PlayerAggregate } from '../player';
 class TableBase implements Model {
 
-    protected _cardAggregate;
-    protected _playerAggregate;
-    protected _turn;
+    readonly cardAggregate;
+    readonly playerAggregate;
+    readonly turn;
     protected static nextId = 0;
-    protected _id;
+    readonly id;
 
     constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id = TableBase.nextId, turn: number = 0) {
-        this._cardAggregate = cardAggregate;
-        this._playerAggregate = playerAggregate;
-        this._turn = turn;
-        this._id = id;
+        this.cardAggregate = cardAggregate;
+        this.playerAggregate = playerAggregate;
+        this.turn = turn;
+        this.id = id;
         TableBase.nextId++;
     }
 
@@ -59,22 +59,6 @@ class TableBase implements Model {
             });
             console.log("-----");
         });
-    }
-
-    get cardAggregate() {
-        return this._cardAggregate;
-    }
-
-    get playerAggregate() {
-        return this._playerAggregate;
-    }
-
-    get turn() {
-        return this._turn;
-    }
-
-    get id() {
-        return this._id;
     }
 
     static createCards() {
