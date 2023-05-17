@@ -2,7 +2,11 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { Model } from '../models/utils';
+import { server } from '../main';
+import { TableBase } from '../models/table';
 class Controller {
+
+    protected templatePath = 'public/templates'
 
     protected httpResponse(res: http.ServerResponse, filename: string) {
         const filePath = path.join(__dirname, '..', 'public', filename);
@@ -15,10 +19,10 @@ class Controller {
             }
 
             const baseFileMatch = mainData.match(/{{ '(.+)' }}/);
-            console.log(baseFileMatch)
+
             if (baseFileMatch) {
                 const templateFileName = baseFileMatch[1];
-                const templatePath = path.join(__dirname, '..', 'public', templateFileName);
+                const templatePath = path.join(__dirname, '..', this.templatePath, templateFileName);
                 fs.readFile(templatePath, 'utf8', (err, baseData) => {
                     if (err) {
                         console.error(err);
@@ -43,6 +47,13 @@ class Controller {
         const contentType = 'application/json';
         res.writeHead(200, { 'Content-Type': contentType });
         res.end(responseContent);
+    }
+
+    protected WSResponse(table: TableBase) {
+        const wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
+        for(let ws of wss) {
+            ws?.send(JSON.stringify(table))
+        }
     }
 
 }

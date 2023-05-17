@@ -3,10 +3,11 @@ import { Session } from './session'
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import http from 'http';
+import path from 'path';
 
 
 class SessionManager {
-    private static sessionsFilePath = './sessions.json';
+    private static sessionsFilePath = path.join(__dirname, '..', '..', 'storage/sessions.json');
     private static cookieKey = 'sessionid';
 
     static createSession(data: any): Session {

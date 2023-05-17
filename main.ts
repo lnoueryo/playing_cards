@@ -1,10 +1,8 @@
 import { Server } from './server'
 
 
-const main = () => {
-    const port = 3000;
-    const server = new Server(port);
-    server.start();
-}
+const port = 3000;
+const server = new Server(port);
+server.start();
 
-main()
+export { server }

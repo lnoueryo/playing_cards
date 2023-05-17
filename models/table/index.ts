@@ -1,3 +1,3 @@
 import { TableBase } from './table'
-import { Porker } from './porker'
-export { TableBase, Porker }
+import { TableManager } from './table_manager'
+export { TableBase, TableManager }

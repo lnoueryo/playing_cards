@@ -2,7 +2,8 @@ import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import url from 'url';
-import { TableController, LoginController, Controller } from './controllers'
+import * as WebSocket from 'ws';
+import { TableController, LoginController } from './controllers'
 import { SessionManager } from './modules/auth';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
@@ -10,22 +11,23 @@ type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
 class Server {
   private noAuthRequiredPaths: { [path: string]: Handler };
   private routeHandlers: { [path: string]: Handler };
+  private clients = new Map<number, WebSocket.WebSocket>();
 
   constructor(private port: number) {
     const tableController = new TableController()
     const loginController = new LoginController()
 
     this.noAuthRequiredPaths = {
-        '/login': loginController.index
+      '/login': loginController.index
     }
 
     this.routeHandlers = {
-        '/': tableController.index,
-        '/create': tableController.create,
-        '/join': tableController.joinPlayer,
-        '/start': tableController.start,
-        '/draw': tableController.draw,
-        '/discard': tableController.discard
+      '/': tableController.index,
+      '/create': tableController.create,
+      '/join': tableController.joinPlayer,
+      '/start': tableController.start,
+      '/draw': tableController.draw,
+      '/discard': tableController.discard
     };
   }
 
@@ -49,32 +51,39 @@ class Server {
       const pathname = requestUrl.pathname || '/';
 
       // 静的ファイルへのリクエストに対する処理
-      if (pathname.startsWith('/static/')) {
-        this.handleStaticFile(req, res, pathname);
-        return;
-      }
+      if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
 
       // 認証が不要なパスに対する処理
-      if (pathname in this.noAuthRequiredPaths) {
-        this.noAuthRequiredPaths[pathname](req, res);
-        return;
-      }
+      if (pathname in this.noAuthRequiredPaths) return this.noAuthRequiredPaths[pathname](req, res);
 
       // 認証
       const session = SessionManager.authorize(req);
-      if (!session) {
-        this.redirect(res, '/login');
-        return;
-      }
+      if (!session) return this.redirect(res, '/login');
 
       // ルーティング
-      if (pathname in this.routeHandlers) {
-        this.routeHandlers[pathname](req, res);
-        return;
-      }
+      if (pathname in this.routeHandlers) return this.routeHandlers[pathname](req, res);
 
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Error: Not Found');
+    });
+
+    // WebSocketサーバーの作成
+    const wss = new WebSocket.Server({ server });
+
+    // connectionイベントのリスナーを設定します。
+    wss.on('connection', (ws) => {
+      ws.on('message', (id: number) => {
+        console.log(`Received: ${id}`);
+        this.clients.set(Number(id), ws);
+        // Broadcast message to all connected clients
+        // wss.clients.forEach((client) => {
+        //   if (client.readyState === WebSocket.OPEN) {
+        //     client.send(`Broadcast: ${id}`);
+        //   }
+        // });
+      });
+    
+      ws.send('connect!');
     });
 
     server.listen(this.port, () => {
@@ -86,6 +95,15 @@ class Server {
     res.statusCode = 302;  // or 301
     res.setHeader('Location', path);
     res.end();
+  }
+
+  getWSConnection(id: number) {
+    return this.clients.get(id);
+  }
+
+  getWSConnections(ids: number[]) {
+    console.log(ids)
+    return ids.map((id) => this.clients.get(id));
   }
 }
 

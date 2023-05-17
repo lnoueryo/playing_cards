@@ -6,23 +6,23 @@ class CardBase implements Model {
     readonly id: number;
     readonly type;
     readonly number;
-    constructor(type: string, number: number) {
+    constructor(type: string, number: number, id: number) {
         this.type = type;
         this.number = number;
-        this.id = CardBase.nextId;
+        this.id = id;
         CardBase.nextId++;
     }
 }
 
 class RegularCard extends CardBase {
-    constructor(type: string, number: number) {
-        super(type, number);
+    constructor(type: string, number: number, id: number = CardBase.nextId) {
+        super(type, number, id);
     }
 }
 
 class JorkerCard extends CardBase {
-    constructor(type: string) {
-        super(type, -1);
+    constructor(type: string, id: number = CardBase.nextId) {
+        super(type, -1, id);
     }
     get name() {
         return '';

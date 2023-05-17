@@ -32,7 +32,8 @@ class PlayerAggregate {
         const newPlayers = this.players.slice();
         newPlayers[turn] = newPlayer;
         const remainingCards = cardAggregate.cards.slice(1);
-        const newCardAggregate = new CardAggregate(remainingCards)
+        const discards = cardAggregate.discards.slice();
+        const newCardAggregate = new CardAggregate(remainingCards, discards)
         const newPlayerAggregate = new PlayerAggregate(newPlayers)
         return [newCardAggregate, newPlayerAggregate];
     }
