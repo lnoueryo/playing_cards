@@ -17,12 +17,12 @@ class Controller {
                 res.end('Internal Server Error');
                 return;
             }
-
+            
             const baseFileMatch = mainData.match(/{{ '(.+)' }}/);
-
+            
             if (baseFileMatch) {
                 const templateFileName = baseFileMatch[1];
-                const templatePath = path.join(__dirname, '..', this.templatePath, templateFileName);
+                const templatePath = path.join(__dirname, '..', 'public/templates', templateFileName);
                 fs.readFile(templatePath, 'utf8', (err, baseData) => {
                     if (err) {
                         console.error(err);

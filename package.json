@@ -4,19 +4,35 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start:front": "webpack --watch",
+    "start:server": "ts-node main.ts",
+    "start": "run-p start:*",
+    "build": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^7.21.8",
+    "@babel/preset-env": "^7.21.5",
     "@types/node": "^18.16.0",
     "@types/uuid": "^9.0.1",
     "@types/ws": "^8.5.4",
-    "typescript": "^5.0.4"
+    "@vue/compiler-sfc": "^3.3.4",
+    "babel-loader": "^9.1.2",
+    "css-loader": "^6.7.3",
+    "style-loader": "^3.3.2",
+    "typescript": "^5.0.4",
+    "vue-loader": "^17.0.1",
+    "vue-template-compiler": "^2.7.14",
+    "webpack": "^5.83.1",
+    "webpack-cli": "^5.1.1",
+    "webpack-dev-server": "^4.15.0"
   },
   "dependencies": {
     "uuid": "^9.0.0",
+    "vue": "^3.3.4",
     "ws": "^8.13.0"
   }
 }
