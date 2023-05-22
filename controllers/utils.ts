@@ -1,9 +1,10 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import * as bcrypt from 'bcrypt';
 import { Model } from '../models/utils';
-import { server } from '../main';
-import { TableBase } from '../models/table';
+import * as WebSocket from 'ws';
+
 class Controller {
 
     protected templatePath = 'public/templates'
@@ -17,9 +18,9 @@ class Controller {
                 res.end('Internal Server Error');
                 return;
             }
-            
+
             const baseFileMatch = mainData.match(/{{ '(.+)' }}/);
-            
+
             if (baseFileMatch) {
                 const templateFileName = baseFileMatch[1];
                 const templatePath = path.join(__dirname, '..', 'public/templates', templateFileName);
@@ -42,18 +43,54 @@ class Controller {
         });
     }
 
-    protected jsonResponse(res: http.ServerResponse, obj: Model | {}) {
+    protected jsonResponse(res: http.ServerResponse, obj: Model | {}, statusCode = 200) {
         const responseContent = JSON.stringify(obj);
         const contentType = 'application/json';
-        res.writeHead(200, { 'Content-Type': contentType });
+        res.writeHead(statusCode, { 'Content-Type': contentType });
         res.end(responseContent);
     }
 
-    protected WSResponse(table: TableBase) {
-        const wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
+    protected WSResponse(table: {}, wss: (WebSocket.WebSocket | undefined)[]) {
         for(let ws of wss) {
             ws?.send(JSON.stringify(table))
         }
+    }
+    // getWSAllConnections
+    protected async getBody(req: http.IncomingMessage) {
+        return new Promise<string>((resolve, reject) => {
+            let body = '';
+            req.on('readable', () => {
+                let chunk;
+                while ((chunk = req.read()) !== null) {
+                    body += chunk;
+                }
+            });
+
+            req.on('end', () => {
+                resolve(body);
+            });
+
+            req.on('error', (error) => {
+                reject(error);
+            });
+        });
+    }
+
+    protected getLoginData(): any[] {
+        const rawData = fs.readFileSync(path.join(__dirname, '..', 'storage/login.json'), 'utf-8');
+        return JSON.parse(rawData);
+    }
+
+    async hashPassword(password: string): Promise<string> {
+        const saltRounds = 10; // ハッシュ化のコストパラメーター
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        return hashedPassword;
+    }
+
+    protected async comparePassword(password: string, passwordHash: string): Promise<boolean> {
+        console.log(passwordHash)
+        return await bcrypt.compare(password, passwordHash);
     }
 
 }

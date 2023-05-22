@@ -2,8 +2,8 @@ import { PlayerAggregate } from "../player";
 import { CardBase } from "./card";
 class CardAggregate {
 
-    readonly cards;
-    readonly discards;
+    readonly cards: CardBase[];
+    readonly discards: CardBase[];
 
     constructor(cards: CardBase[], discards: CardBase[] = []) {
         this.cards = cards;

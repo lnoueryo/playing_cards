@@ -5,9 +5,9 @@ import { Player, PlayerAggregate } from '../player';
 
 class TableBase implements Model {
 
-    readonly cardAggregate;
-    readonly playerAggregate;
-    readonly turn;
+    readonly cardAggregate: CardAggregate;
+    readonly playerAggregate: PlayerAggregate;
+    readonly turn: number;
     protected static nextId = 0;
     readonly id: number;
 
@@ -103,6 +103,51 @@ class TableBase implements Model {
         const playerAggregate = new PlayerAggregate(players);
 
         return new TableBase(cardAggregate, playerAggregate, id, turn);
+    }
+
+    convertToTable(): Table {
+
+        const cardData = {
+          cards: this.cardAggregate.cards.map(card => {
+            return {
+              type: card.type,
+              number: card.number,
+              id: card.id
+            };
+          }),
+          discards: this.cardAggregate.discards.map(card => {
+            return {
+              type: card.type,
+              number: card.number,
+              id: card.id
+            };
+          })
+        };
+
+        const playerData = {
+          players: this.playerAggregate.players.map(player => {
+            return {
+              id: player.id,
+              name: player.name,
+              cards: player.cards.map(card => {
+                return {
+                  type: card.type,
+                  number: card.number,
+                  id: card.id
+                };
+              })
+            };
+          })
+        };
+
+        const table = {
+            cardAggregate: cardData,
+            playerAggregate: playerData,
+            turn: this.turn,
+            id: this.id
+        };
+
+        return table as Table;
     }
 
 }

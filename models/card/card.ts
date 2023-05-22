@@ -4,8 +4,8 @@ import { Model } from "../utils";
 class CardBase implements Model {
     protected static nextId = 0;
     readonly id: number;
-    readonly type;
-    readonly number;
+    readonly type: string;
+    readonly number: number;
     constructor(type: string, number: number, id: number) {
         this.type = type;
         this.number = number;
