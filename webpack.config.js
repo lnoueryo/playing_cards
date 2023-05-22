@@ -27,12 +27,18 @@ module.exports = {
         test: /\.vue$/,
         loader: 'vue-loader'
       },
+      {
+        test: /\.tsx?$/,
+        loader: 'ts-loader',
+        exclude: /node_modules/,
+      },
     ]
   },
   resolve: {
     alias: {
       'vue$': 'vue/dist/vue.esm-bundler.js'
-    }
+    },
+    extensions: ['.ts', '.tsx', '.js'],
   },
   devServer: {
     static: {

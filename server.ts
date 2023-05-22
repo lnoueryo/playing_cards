@@ -5,12 +5,14 @@ import url from 'url';
 import * as WebSocket from 'ws';
 import { TableController, LoginController } from './controllers'
 import { SessionManager } from './modules/auth';
+import { Session } from './modules/auth/session';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
+type AuthenticatedHandler = (req: http.IncomingMessage, res: http.ServerResponse, session: Session) => void;
 
 class Server {
-  private noAuthRequiredPaths: { [path: string]: Handler };
-  private routeHandlers: { [path: string]: Handler };
+  private noAuthRequiredPaths: { [path: string]: {[path: string]: Handler} };
+  private routeHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
   private clients = new Map<number, WebSocket.WebSocket>();
 
   constructor(private port: number) {
@@ -18,16 +20,27 @@ class Server {
     const loginController = new LoginController()
 
     this.noAuthRequiredPaths = {
-      '/login': loginController.index
+      'GET': {
+        '/login': loginController.index,
+      },
+      'POST': {
+        '/api/login': loginController.login,
+      }
     }
 
     this.routeHandlers = {
-      '/': tableController.index,
-      '/create': tableController.create,
-      '/join': tableController.joinPlayer,
-      '/start': tableController.start,
-      '/draw': tableController.draw,
-      '/discard': tableController.discard
+      'GET': {
+        '/': tableController.index,
+        '/api/table': tableController.tables,
+        '/api/table/join': tableController.joinPlayer,
+        '/start': tableController.start,
+        '/draw': tableController.draw,
+        '/discard': tableController.discard,
+        '/api/user': loginController.user,
+      },
+      'POST': {
+        '/api/table/create': tableController.create,
+      }
     };
   }
 
@@ -54,14 +67,18 @@ class Server {
       if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
 
       // 認証が不要なパスに対する処理
-      if (pathname in this.noAuthRequiredPaths) return this.noAuthRequiredPaths[pathname](req, res);
+      if (req.method && pathname in this.noAuthRequiredPaths[req.method]) {
+        const session = SessionManager.authorize(req);
+        if (session) return this.backToPreviousPage(req, res);
+        return this.noAuthRequiredPaths[req.method][pathname](req, res);
+      }
 
       // 認証
       const session = SessionManager.authorize(req);
       if (!session) return this.redirect(res, '/login');
 
       // ルーティング
-      if (pathname in this.routeHandlers) return this.routeHandlers[pathname](req, res);
+      if (req.method && pathname in this.routeHandlers[req.method]) return this.routeHandlers[req.method][pathname](req, res, session);
 
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Error: Not Found');
@@ -82,8 +99,8 @@ class Server {
         //   }
         // });
       });
-    
-      ws.send('connect!');
+
+      // ws.send('connect!');
     });
 
     server.listen(this.port, () => {
@@ -102,8 +119,18 @@ class Server {
   }
 
   getWSConnections(ids: number[]) {
-    console.log(ids)
     return ids.map((id) => this.clients.get(id));
+  }
+
+  getWSAllConnections() {
+    return Array.from(this.clients.values());
+  }
+
+  backToPreviousPage(req: http.IncomingMessage, res: http.ServerResponse) {
+    const referer = req.headers.referer;
+    const refererUrl = url.parse(referer || '', true);
+    const refererPathname = refererUrl.pathname || '/';
+    return this.redirect(res, refererPathname);
   }
 }
 
