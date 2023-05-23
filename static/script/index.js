@@ -1,10 +1,12 @@
 import { createApp } from 'vue';
-import Login from './pages/login.vue';
-import Home from './pages/home.vue';
+import LoginView from './pages/login.vue';
+import HomeView from './pages/home.vue';
+import TableView from './pages/table.vue';
 
 createApp({
     components: {
-        Login,
-        Home,
+        LoginView,
+        HomeView,
+        TableView,
     },
 }).mount('#app');
