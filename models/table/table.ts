@@ -1,22 +1,20 @@
 import { Model } from "../utils";
 import { CardBase, RegularCard, JorkerCard, CardAggregate } from '../card'
 import { Player, PlayerAggregate } from '../player';
-
+import { v4 as uuidv4 } from 'uuid';
 
 class TableBase implements Model {
 
     readonly cardAggregate: CardAggregate;
     readonly playerAggregate: PlayerAggregate;
     readonly turn: number;
-    protected static nextId = 0;
-    readonly id: number;
+    readonly id: string;
 
-    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id: number = TableBase.nextId, turn: number = 0) {
+    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id: string = uuidv4(), turn: number = 0) {
         this.cardAggregate = cardAggregate;
         this.playerAggregate = playerAggregate;
         this.turn = turn;
         this.id = id;
-        TableBase.nextId++;
     }
 
     addPlayer(player: Player) {
@@ -185,7 +183,7 @@ interface Table {
         ]
     },
     "turn": number,
-    "id": number
+    "id": string
 }
 
 export { TableBase, Table }

@@ -1,5 +1,5 @@
 import { Cookie } from './cookie'
-import { Session } from './session'
+import { Session, User } from './session'
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import http from 'http';
@@ -13,20 +13,7 @@ class SessionManager {
     static createSession(data: any): Session {
         // セッションIDを生成
         const sessionId = uuidv4();
-
-        // 新しいセッションを作成
-        const newSession = new Session(sessionId, data);
-
-        // 既存のセッションデータを読み込む
-        const sessions = this.readSessions();
-
-        // 新しいセッションデータを追加
-        sessions[sessionId] = newSession.data;
-
-        // セッションデータを保存
-        this.writeSessions(sessions);
-
-        return newSession;
+        return new Session(sessionId, data);
     }
 
     static getSession(sessionId: string): Session | null {
@@ -57,19 +44,21 @@ class SessionManager {
         return value;
     }
 
-    private static readSessions(): any {
-        let sessions = {};
+    private static readSessions(): {[key: string]: User} {
+        let sessionJson: {[key: string]: User} = {};
         try {
             const data = fs.readFileSync(this.sessionsFilePath, 'utf8');
-            sessions = JSON.parse(data);
+            sessionJson = JSON.parse(data);
         } catch (error) {
             console.error(`Failed to read sessions file: ${error}`);
         }
-        return sessions;
+        return sessionJson;
     }
 
-    private static writeSessions(sessions: any): void {
+    static writeSessions(session: Session): void {
         try {
+            const sessions = this.readSessions();
+            sessions[session.sessionId] = session.data;
             const data = JSON.stringify(sessions, null, 2);
             fs.writeFileSync(this.sessionsFilePath, data, 'utf8');
         } catch (error) {

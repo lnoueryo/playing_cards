@@ -33,6 +33,7 @@ class LoginController extends Controller {
             if (user && await super.comparePassword(password, user.password)) {
                 // ログイン成功
                 const session = SessionManager.createSession(user)
+                SessionManager.writeSessions(session)
                 SessionManager.setCookie(res, session.sessionId)
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);
