@@ -30,6 +30,9 @@ module.exports = {
       {
         test: /\.tsx?$/,
         loader: 'ts-loader',
+        options: {
+          configFile: 'static/script/tsconfig.json', // <- ここでtsconfig.jsonのパスを指定します
+        },
         exclude: /node_modules/,
       },
     ]
