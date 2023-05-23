@@ -8,7 +8,7 @@ import { SessionManager } from './modules/auth';
 import { Session } from './modules/auth/session';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
-type AuthenticatedHandler = (req: http.IncomingMessage, res: http.ServerResponse, session: Session) => void;
+type AuthenticatedHandler = (req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) => void;
 
 class Server {
   private noAuthRequiredPaths: { [path: string]: {[path: string]: Handler} };
@@ -30,9 +30,10 @@ class Server {
 
     this.routeHandlers = {
       'GET': {
-        '/': tableController.index,
+        '/': tableController.home,
+        '/table/:id': tableController.index,
         '/api/table': tableController.tables,
-        '/api/table/join': tableController.joinPlayer,
+        '/api/table/:id': tableController.show,
         '/start': tableController.start,
         '/draw': tableController.draw,
         '/discard': tableController.discard,
@@ -40,6 +41,7 @@ class Server {
       },
       'POST': {
         '/api/table/create': tableController.create,
+        '/api/table/:id/join': tableController.joinPlayer,
       }
     };
   }
@@ -78,7 +80,14 @@ class Server {
       if (!session) return this.redirect(res, '/login');
 
       // ルーティング
-      if (req.method && pathname in this.routeHandlers[req.method]) return this.routeHandlers[req.method][pathname](req, res, session);
+      if (req.method) {
+        for (const pattern in this.routeHandlers[req.method]) {
+          const params = this.matchPath(pattern, pathname);
+          if (params) {
+            return this.routeHandlers[req.method][pattern](req, res, session, params);
+          }
+        }
+      }
 
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Error: Not Found');
@@ -108,10 +117,29 @@ class Server {
     });
   }
 
-  private redirect(res: http.ServerResponse, path: string) {
+  redirect(res: http.ServerResponse, path: string) {
     res.statusCode = 302;  // or 301
     res.setHeader('Location', path);
     res.end();
+  }
+
+  matchPath(pattern: string, pathname: string): { [param: string]: string } | null {
+    const keys: string[] = [];
+    pattern = pattern.replace(/:([^\/]+)/g, (_, key) => {
+      keys.push(key);
+      return '([^\/]+)';
+    });
+
+    const match = pathname.match(new RegExp('^' + pattern + '$'));
+    if (match) {
+      const params = match.slice(1);
+      return keys.reduce((memo, key, index) => {
+        memo[key] = params[index];
+        return memo;
+      }, {} as { [param: string]: string });
+    }
+
+    return null;
   }
 
   getWSConnection(id: number) {
