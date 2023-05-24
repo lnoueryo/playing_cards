@@ -42,7 +42,8 @@ class TableController extends Controller {
         const playerAggregate = new PlayerAggregate()
         const newPlayerAggregate = playerAggregate.addPlayer(player)
         const cardAggregate = CardAggregate.createNewCards();
-        const table = new TableBase(cardAggregate, newPlayerAggregate);
+        const maxPlayers = 3;
+        const table = new TableBase(cardAggregate, newPlayerAggregate, maxPlayers);
         tables.push(table)
         await TableManager.writeJsonFile(table)
         const newSession = session.joinTable(table.id)
