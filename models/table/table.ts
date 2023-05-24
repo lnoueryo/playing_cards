@@ -7,21 +7,21 @@ class TableBase implements Model {
 
     readonly cardAggregate: CardAggregate;
     readonly playerAggregate: PlayerAggregate;
-    readonly turn: number;
     readonly id: string;
     readonly maxPlayers: number;
+    readonly turn: number;
 
-    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id: string = uuidv4(), turn: number = 0, maxPlayers = 3) {
+    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id: string = uuidv4(), maxPlayers = 3, turn: number = 0) {
         this.cardAggregate = cardAggregate;
         this.playerAggregate = playerAggregate;
-        this.turn = turn;
         this.id = id;
         this.maxPlayers = maxPlayers;
+        this.turn = turn;
     }
 
     addPlayer(player: Player) {
         const newPlayerAggregate = this.playerAggregate.addPlayer(player);
-        return new TableBase(this.cardAggregate, newPlayerAggregate, this.id);
+        return new TableBase(this.cardAggregate, newPlayerAggregate, this.id, this.maxPlayers);
     }
 
     start() {
@@ -31,31 +31,40 @@ class TableBase implements Model {
         return handedOverTable.drawCard()
     }
 
+    next() {
+        const newPlayerAggregate = this.playerAggregate.discardAll()
+        const newCardAggregate = CardAggregate.createNewCards()
+        const resetTable = new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.maxPlayers, 0)
+        const shuffledCardsTable = resetTable.shuffleCards()
+        const handedOverTable = shuffledCardsTable.handOverCards();
+        return handedOverTable.drawCard();
+    }
+
     shuffleCards() {
         const cardAggregate = this.cardAggregate.shuffle()
-        return new TableBase(cardAggregate, this.playerAggregate, this.id);
+        return new TableBase(cardAggregate, this.playerAggregate, this.id, this.maxPlayers);
     }
 
     shufflePlayers() {
         const playerAggregate = this.playerAggregate.shuffle()
-        return new TableBase(this.cardAggregate, playerAggregate, this.id);
+        return new TableBase(this.cardAggregate, playerAggregate, this.id, this.maxPlayers);
     }
 
     handOverCards() {
         const [newCardAggregate, newPlayerAggregate] = this.cardAggregate.handOverCards(this.playerAggregate);
-        return new TableBase(newCardAggregate, newPlayerAggregate, this.id);
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.maxPlayers);
     }
 
     drawCard() {
         const [newCardAggregate, newPlayerAggregate] =  this.playerAggregate.drawCard(this.cardAggregate, this.turn);
-        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.turn);
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.maxPlayers, this.turn);
     }
 
     discard(card: CardBase) {
         const newPlayerAggregate = this.playerAggregate.discard(card, this.turn);
         const newCardAggregate = this.cardAggregate.addDiscard(card);
         const turn = this.nextTurn();
-        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, turn)
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.maxPlayers, turn)
     }
 
     protected nextTurn() {
@@ -64,50 +73,27 @@ class TableBase implements Model {
         return turn;
     }
 
-    static createCards() {
-        const suitsNum = 4
-        const cards: CardBase[] = []
-
-        for (let i = 0; i < suitsNum; i++) {
-            for (let j = 1; j < 14; j++) {
-                const card = new RegularCard(i, j);
-                cards.push(card)
-            }
-        }
-
-        for (let i = 1; i < 3; i++) {
-            const joker = new JorkerCard(i)
-            cards.push(joker)
-        }
-
-        return new CardAggregate(cards);
-    }
-
     isMaxPlayersReached() {
         return this.maxPlayers == this.playerAggregate.currentPlayerCount;
     }
 
+    getPlayerIds() {
+        return this.playerAggregate.getPlayerIds()
+    }
+
     static createTable(tableData: Table) {
 
-        const cardData = tableData["cardAggregate"]["cards"];
-        const discardData = tableData["cardAggregate"]["discards"];
-        const playerData = tableData["playerAggregate"]["players"];
-        const turn = tableData["turn"];
+        const cardsJson = tableData["cardAggregate"]["cards"];
+        const discardsJsonData = tableData["cardAggregate"]["discards"];
+        const playersJson = tableData["playerAggregate"]["players"];
         const id = tableData["id"];
+        const maxPlayers = tableData["maxPlayers"];
+        const turn = tableData["turn"];
 
-        const cards = cardData.map(card => {
-            return card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"])
-        });
-        const discards = discardData.map(card => card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"]));
-        const players = playerData.map(player => {
-            const  playerCards= player["cards"].map(card => card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"]));
-            return new Player(player["id"], player["name"], playerCards);
-        });
+        const cardAggregate = CardAggregate.createCards(cardsJson, discardsJsonData)
+        const playerAggregate = PlayerAggregate.createPlayers(playersJson)
 
-        const cardAggregate = new CardAggregate(cards, discards);
-        const playerAggregate = new PlayerAggregate(players);
-
-        return new TableBase(cardAggregate, playerAggregate, id, turn);
+        return new TableBase(cardAggregate, playerAggregate, id, maxPlayers, turn);
     }
 
     convertToTable(): Table {
@@ -148,8 +134,9 @@ class TableBase implements Model {
         const table = {
             cardAggregate: cardData,
             playerAggregate: playerData,
+            id: this.id,
             turn: this.turn,
-            id: this.id
+            maxPlayers: this.maxPlayers
         };
 
         return table as Table;
@@ -189,8 +176,9 @@ interface Table {
             }
         ]
     },
+    "id": string,
+    "maxPlayers": number,
     "turn": number,
-    "id": string
 }
 
 export { TableBase, Table }

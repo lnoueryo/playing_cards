@@ -75,6 +75,10 @@ class PlayerAggregate {
         return turn >= this.players.length;
     }
 
+    getPlayerIds() {
+        return this.players.map((player) => player.id)
+    }
+
     static createPlayers(playersJson: PlayerType[]) {
         const players = playersJson.map(player => {
             return Player.createPlayer(player);
