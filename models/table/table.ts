@@ -9,6 +9,8 @@ class TableBase implements Model {
     readonly playerAggregate: PlayerAggregate;
     readonly id: string;
     readonly maxPlayers: number;
+    readonly maxRounds: number = 1;
+    readonly maxGames: number = 2;
     readonly game: number;
     readonly round: number;
     readonly turn: number;
@@ -68,17 +70,36 @@ class TableBase implements Model {
         const newPlayerAggregate = this.playerAggregate.discard(card, this.turn);
         const newCardAggregate = this.cardAggregate.addDiscard(card);
         const turn = this.nextTurn();
-        return new TableBase(newCardAggregate, newPlayerAggregate, this.maxPlayers, this.id, this.game, this.round, turn);
+        const round = this.nextRound()
+        return new TableBase(newCardAggregate, newPlayerAggregate, this.maxPlayers, this.id, this.game, round, turn);
     }
 
     protected nextTurn() {
-        const turn = this.turn + 1
+        const turn = this.turn + 1;
         if(this.playerAggregate.hasCompletedFullRound(turn)) return 0;
         return turn;
     }
 
+    protected nextRound() {
+        const turn = this.turn + 1;
+        if(this.playerAggregate.hasCompletedFullRound(turn)) return this.round + 1;
+        return this.round;
+    }
+
+    endGame() {
+        return new TableBase(this.cardAggregate, this.playerAggregate, this.maxPlayers, this.id, this.game + 1, this.round, this.turn);
+    }
+
     isMaxPlayersReached() {
         return this.maxPlayers == this.playerAggregate.currentPlayerCount;
+    }
+
+    isGameEndRoundReached() {
+        return this.maxRounds == this.round;
+    }
+
+    isGameEndReached() {
+        return this.maxGames == this.game;
     }
 
     getPlayerIds() {

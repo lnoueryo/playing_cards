@@ -119,7 +119,7 @@ class TableController extends Controller {
         return super.jsonResponse(res, drawnTable)
     }
 
-    async discard(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
+    async next(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
         const tablesJson = await TableManager.readJsonFile()
         if(!params?.id || params.id in tablesJson == false) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         if(session.isNotMatchingTableId(session.data.tableId)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
@@ -128,6 +128,12 @@ class TableController extends Controller {
         const cardJson = await super.getBody(req)
         const card = CardBase.createCard(JSON.parse(cardJson))
         const discardedTable = table.discard(card)
+        if(discardedTable.isGameEndRoundReached()) {
+            const endGameTable = discardedTable.endGame()
+            await TableManager.writeJsonFile(endGameTable)
+            const wss = server.getWSConnections(endGameTable.getPlayerIds())
+            super.WSResponse({table: endGameTable}, wss)
+        }
         const drawCardTable = discardedTable.drawCard()
         await TableManager.writeJsonFile(drawCardTable)
         const wss = server.getWSConnections(drawCardTable.getPlayerIds())

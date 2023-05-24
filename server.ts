@@ -36,14 +36,13 @@ class Server {
         '/api/table/:id': tableController.show,
         '/start': tableController.start,
         '/draw': tableController.draw,
-        '/discard': tableController.discard,
         '/api/user': loginController.user,
       },
       'POST': {
         '/api/table/create': tableController.create,
         '/api/table/:id/join': tableController.joinPlayer,
         '/api/table/:id/reset': tableController.reset,
-        '/api/table/:id/discard': tableController.discard,
+        '/api/table/:id/next': tableController.next,
       }
     };
   }
