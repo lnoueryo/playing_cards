@@ -30,7 +30,9 @@ class SessionManager {
     }
 
     static setCookie(res: http.ServerResponse, value: string): void {
-        res.setHeader('Set-Cookie', `${this.cookieKey}=${value}; Path=/; HttpOnly`);
+        let date = new Date();
+        date.setFullYear(date.getFullYear() + 10); // 10年後の日付を設定
+        res.setHeader('Set-Cookie', `${this.cookieKey}=${value}; Path=/; Expires=${date.toUTCString()}; HttpOnly`);
     }
 
     static getCookie(req: http.IncomingMessage): string | null {
