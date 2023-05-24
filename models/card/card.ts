@@ -15,6 +15,13 @@ class CardBase implements Model {
     static createCard(card: Card) {
         return card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"])
     }
+    convertToJson() {
+        return {
+            type: this.type,
+            number: this.number,
+            id: this.id
+        };
+    }
 }
 
 class RegularCard extends CardBase {

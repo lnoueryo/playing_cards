@@ -103,51 +103,15 @@ class TableBase implements Model {
     }
 
     convertToJson(): Table {
-
-        const cardData = {
-          cards: this.cardAggregate.cards.map(card => {
-            return {
-              type: card.type,
-              number: card.number,
-              id: card.id
-            };
-          }),
-          discards: this.cardAggregate.discards.map(card => {
-            return {
-              type: card.type,
-              number: card.number,
-              id: card.id
-            };
-          })
-        };
-
-        const playerData = {
-          players: this.playerAggregate.players.map(player => {
-            return {
-              id: player.id,
-              name: player.name,
-              cards: player.cards.map(card => {
-                return {
-                  type: card.type,
-                  number: card.number,
-                  id: card.id
-                };
-              })
-            };
-          })
-        };
-
-        const table = {
-            cardAggregate: cardData,
-            playerAggregate: playerData,
+        return {
+            cardAggregate: this.cardAggregate.convertToJson(),
+            playerAggregate: this.playerAggregate.convertToJson(),
             maxPlayers: this.maxPlayers,
             id: this.id,
             game: this.game,
             round: this.round,
             turn: this.turn,
-        };
-
-        return table as Table;
+        } as Table;
     }
 
 }

@@ -23,7 +23,7 @@ class TableManager {
     static async writeJsonFile(table: TableBase): Promise<{[key: string]: Table}> {
         try {
             const tablesJson = await TableManager.readJsonFile()
-            tablesJson[table.id] = table.convertToTable()
+            tablesJson[table.id] = table.convertToJson()
             await fs.writeFile(TableManager.filePath, JSON.stringify(tablesJson, null, 2), 'utf8');
             return tablesJson
         } catch (err) {

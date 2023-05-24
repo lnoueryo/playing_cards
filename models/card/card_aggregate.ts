@@ -35,6 +35,13 @@ class CardAggregate {
         return new CardAggregate(cards, discards)
     }
 
+    convertToJson() {
+        return {
+            cards: this.cards.map(card => card.convertToJson()),
+            discards: this.discards.map(card => card.convertToJson())
+        };
+    }
+
     shuffle() {
         const cards = this.cards.slice();
         let currentIndex = this.cards.length;

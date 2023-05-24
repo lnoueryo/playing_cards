@@ -21,6 +21,15 @@ class Player implements Model {
         const cards = this.cards.filter((card) => card.id != unwantedCard.id);
         return new Player(this.id, this.name, cards)
     }
+
+    convertToJson() {
+        return {
+            id: this.id,
+            name: this.name,
+            cards: this.cards.map(card => card.convertToJson())
+        };
+    }
+
     static createPlayer(playerJson: PlayerType) {
         const cards = playerJson.cards.map((card) => CardBase.createCard(card))
         return new Player(playerJson["id"], playerJson["name"], cards);

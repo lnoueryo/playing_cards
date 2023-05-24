@@ -79,6 +79,12 @@ class PlayerAggregate {
         return this.players.map((player) => player.id)
     }
 
+    convertToJson() {
+        return {
+            players: this.players.map(player => player.convertToJson())
+        };
+    }
+
     static createPlayers(playersJson: PlayerType[]) {
         const players = playersJson.map(player => {
             return Player.createPlayer(player);
