@@ -42,6 +42,8 @@ class Server {
       'POST': {
         '/api/table/create': tableController.create,
         '/api/table/:id/join': tableController.joinPlayer,
+        '/api/table/:id/reset': tableController.reset,
+        '/api/table/:id/discard': tableController.discard,
       }
     };
   }

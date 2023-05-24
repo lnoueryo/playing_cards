@@ -5,7 +5,7 @@ import { Controller } from "./utils";
 import { Session } from '../modules/auth/session';
 import { server } from '../main';
 import { SessionManager } from '../modules/auth';
-import { CardAggregate } from '../models/card';
+import { CardAggregate, CardBase } from '../models/card';
 class TableController extends Controller {
 
     async home(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
@@ -120,20 +120,18 @@ class TableController extends Controller {
 
     async discard(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
         const tablesJson = await TableManager.readJsonFile()
-        if(!params?.id || params.id in tablesJson == false) {
-            return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
-        }
+        if(!params?.id || params.id in tablesJson == false) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
+        if(session.isNotMatchingTableId(session.data.tableId)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
         const cardJson = await super.getBody(req)
-        console.log(cardJson)
-        return super.jsonResponse(res, {});
-        const card = table.playerAggregate.players[table.turn].cards[0];
+        const card = CardBase.createCard(JSON.parse(cardJson))
         const discardedTable = table.discard(card)
-        await TableManager.writeJsonFile(discardedTable)
-        const wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
-        super.WSResponse(discardedTable, wss)
-        return super.jsonResponse(res, discardedTable);
+        const drawCardTable = discardedTable.drawCard()
+        await TableManager.writeJsonFile(drawCardTable)
+        const wss = server.getWSConnections(drawCardTable.getPlayerIds())
+        super.WSResponse({table: drawCardTable}, wss)
+        return super.jsonResponse(res, drawCardTable);
     }
 
 

@@ -6,6 +6,9 @@
       </div>
       <div class="player-name">{{ player.name }}</div>
     </div>
+    <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%)">
+    <button @click="reset">reset</button>
+    </div>
   </div>
 </template>
 <script setup>
@@ -38,6 +41,8 @@ const sort = (cards) => {
   }
 
   const sortedCard = cards.sort((a, b) => {
+    if (a.type === 4 && b.type !== 4) return 1; // aをbより後ろにする
+    if (a.type !== 4 && b.type === 4) return -1; // aをbより前にする
     if (a.number !== b.number) return a.number - b.number;
     return a.type - b.type;
   });
@@ -76,7 +81,10 @@ const fetchUser = async() => {
   user.value = res.data
   await fetchTable()
   connectWebsocket(user)
+  changeDisplayForUser()
+}
 
+const changeDisplayForUser = () => {
   const userIndex = table.value.playerAggregate.players.findIndex(player => player.id === user.value.id);
 
   if(userIndex !== -1) {
@@ -85,9 +93,15 @@ const fetchUser = async() => {
   }
 }
 
-const discard = (player, card) => {
+const discard = async(player, card) => {
   if(player.id != user.value.id || player.cards.length != 6) return;
-  console.log(card)
+  const res = await axios.post('/api/table/' + user.value.tableId + '/discard', card);
+  console.debug(res)
+}
+
+const reset = async() => {
+  const res = await axios.post('/api/table/' + user.value.tableId + '/reset');
+  console.debug(res.data)
 }
 
 const connectWebsocket = (user) => {
@@ -106,6 +120,7 @@ const connectWebsocket = (user) => {
     if('table' in tableJson) {
       console.log(e.data, 'table');
       table.value = tableJson.table
+      changeDisplayForUser()
     }
   };
 }

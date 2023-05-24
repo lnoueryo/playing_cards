@@ -68,9 +68,7 @@ class CardAggregate {
 
     addDiscard(card: CardBase) {
         const newDiscards = this.discards.slice();
-        console.log(newDiscards)
         newDiscards.push(card);
-        console.log(newDiscards)
         return new CardAggregate(this.cards, newDiscards)
     }
 

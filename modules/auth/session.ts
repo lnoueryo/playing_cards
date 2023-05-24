@@ -25,6 +25,10 @@ class Session {
         return !!this.data.tableId
     }
 
+    isNotMatchingTableId(tableId: string) {
+        return this.data.tableId != tableId;
+    }
+
 }
 
 export { Session, User }
