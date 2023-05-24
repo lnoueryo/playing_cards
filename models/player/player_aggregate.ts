@@ -16,6 +16,25 @@ class PlayerAggregate {
         return new PlayerAggregate(players);
     }
 
+    shuffle() {
+        const players = this.players.slice();
+        let currentIndex = this.players.length;
+        let temporaryValue, randomIndex;
+        // 配列の要素がなくなるまでシャッフルを繰り返す
+        while (currentIndex !== 0) {
+            // 残りの要素からランダムな要素を選ぶ
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+
+            // 現在の要素とランダムに選ばれた要素を交換する
+            temporaryValue = players[currentIndex];
+            players[currentIndex] = players[randomIndex];
+            players[randomIndex] = temporaryValue;
+        }
+
+        return new PlayerAggregate(players);
+    }
+
     takeCards(cards: CardBase[], cardNum: number) {
         const players = this.players.map(player => {
             const playerCards = cards.slice(0, cardNum);
@@ -48,6 +67,10 @@ class PlayerAggregate {
     hasCompletedFullRound(turn: number) {
         return turn >= this.players.length;
     }
+
+    get currentPlayerCount(): number {
+        return this.players.length;
+      }
 
 }
 

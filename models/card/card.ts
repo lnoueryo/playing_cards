@@ -1,28 +1,30 @@
 import { Model } from "../utils";
 
+const SUITS = ['spade','clover', 'diamond', 'heart', 'joker']
+
 
 class CardBase implements Model {
-    protected static nextId = 0;
     readonly id: number;
-    readonly type: string;
+    readonly type: number;
     readonly number: number;
-    constructor(type: string, number: number, id: number) {
+    constructor(id: number, type: number, number: number) {
+        this.id = id;
         this.type = type;
         this.number = number;
-        this.id = id;
-        CardBase.nextId++;
     }
 }
 
 class RegularCard extends CardBase {
-    constructor(type: string, number: number, id: number = CardBase.nextId) {
-        super(type, number, id);
+    constructor(type: number, number: number) {
+        const id = type * 13 + number
+        super(id, type, number);
     }
 }
 
 class JorkerCard extends CardBase {
-    constructor(type: string, id: number = CardBase.nextId) {
-        super(type, -1, id);
+    constructor(number: number) {
+        const id = 13 * 4 + number
+        super(id, 4, number);
     }
     get name() {
         return '';

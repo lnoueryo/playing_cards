@@ -9,12 +9,14 @@ class TableBase implements Model {
     readonly playerAggregate: PlayerAggregate;
     readonly turn: number;
     readonly id: string;
+    readonly maxPlayers: number;
 
-    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id: string = uuidv4(), turn: number = 0) {
+    constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, id: string = uuidv4(), turn: number = 0, maxPlayers = 3) {
         this.cardAggregate = cardAggregate;
         this.playerAggregate = playerAggregate;
         this.turn = turn;
         this.id = id;
+        this.maxPlayers = maxPlayers;
     }
 
     addPlayer(player: Player) {
@@ -22,10 +24,21 @@ class TableBase implements Model {
         return new TableBase(this.cardAggregate, newPlayerAggregate, this.id);
     }
 
-    shuffle() {
-        const newCardAggregate = this.cardAggregate.shuffle()
+    start() {
+        const shuffledCardsTable = this.shuffleCards()
+        const shuffledPlayersTable = shuffledCardsTable.shufflePlayers();
+        const handedOverTable = shuffledPlayersTable.handOverCards();
+        return handedOverTable.drawCard()
+    }
 
-        return new TableBase(newCardAggregate, this.playerAggregate, this.id);
+    shuffleCards() {
+        const cardAggregate = this.cardAggregate.shuffle()
+        return new TableBase(cardAggregate, this.playerAggregate, this.id);
+    }
+
+    shufflePlayers() {
+        const playerAggregate = this.playerAggregate.shuffle()
+        return new TableBase(this.cardAggregate, playerAggregate, this.id);
     }
 
     handOverCards() {
@@ -34,7 +47,6 @@ class TableBase implements Model {
     }
 
     drawCard() {
-        console.log(this.turn)
         const [newCardAggregate, newPlayerAggregate] =  this.playerAggregate.drawCard(this.cardAggregate, this.turn);
         return new TableBase(newCardAggregate, newPlayerAggregate, this.id, this.turn);
     }
@@ -52,34 +64,27 @@ class TableBase implements Model {
         return turn;
     }
 
-    private displayPlayers() {
-        this.playerAggregate.players.forEach((player, index) => {
-            console.log(`Player ${index + 1}: ${player.name}`);
-            console.log("Cards:");
-            player.cards.forEach((card) => {
-              console.log(`- ${card.id} ${card.type} ${card.number ? card.number : ""}`);
-            });
-            console.log("-----");
-        });
-    }
-
     static createCards() {
-        const suits = ['clover', 'spade', 'heart', 'diamond']
+        const suitsNum = 4
         const cards: CardBase[] = []
 
-        for (let i = 0; i < suits.length; i++) {
+        for (let i = 0; i < suitsNum; i++) {
             for (let j = 1; j < 14; j++) {
-                const card = new RegularCard(suits[i], j);
+                const card = new RegularCard(i, j);
                 cards.push(card)
             }
         }
 
-        for (let i = 0; i < 2; i++) {
-            const joker = new JorkerCard('joker')
+        for (let i = 1; i < 3; i++) {
+            const joker = new JorkerCard(i)
             cards.push(joker)
         }
 
         return new CardAggregate(cards);
+    }
+
+    isMaxPlayersReached() {
+        return this.maxPlayers == this.playerAggregate.currentPlayerCount;
     }
 
     static createTable(tableData: Table) {
@@ -90,10 +95,12 @@ class TableBase implements Model {
         const turn = tableData["turn"];
         const id = tableData["id"];
 
-        const cards = cardData.map(card => card["type"] === "joker" ? new JorkerCard(card["type"], card["id"]) : new RegularCard(card["type"], card["number"], card["id"]));
-        const discards = discardData.map(card => card["type"] === "joker" ? new JorkerCard(card["type"], card["id"]) : new RegularCard(card["type"], card["number"], card["id"]));
+        const cards = cardData.map(card => {
+            return card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"])
+        });
+        const discards = discardData.map(card => card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"]));
         const players = playerData.map(player => {
-            const  playerCards= player["cards"].map(card => card["type"] === "joker" ? new JorkerCard(card["type"], card["id"]) : new RegularCard(card["type"], card["number"], card["id"]));
+            const  playerCards= player["cards"].map(card => card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"]));
             return new Player(player["id"], player["name"], playerCards);
         });
 
@@ -154,14 +161,14 @@ interface Table {
     "cardAggregate": {
         "cards": [
             {
-                "type": string,
+                "type": number,
                 "number": number,
                 "id": number
             },
         ],
         "discards": [
             {
-                "type": string,
+                "type": number,
                 "number": number,
                 "id": number
             },
@@ -174,7 +181,7 @@ interface Table {
                 "name": string,
                 "cards": [
                     {
-                        "type": string,
+                        "type": number,
                         "number": number,
                         "id": number
                     },
