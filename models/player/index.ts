@@ -1,5 +1,5 @@
 import { Model } from "../utils";
-import { CardBase } from "../card";
+import { CardBase, Card } from "../card";
 import { PlayerAggregate } from './player_aggregate'
 
 
@@ -21,7 +21,17 @@ class Player implements Model {
         const cards = this.cards.filter((card) => card.id != unwantedCard.id);
         return new Player(this.id, this.name, cards)
     }
+    static createPlayer(playerJson: PlayerType) {
+        const cards = playerJson.cards.map((card) => CardBase.createCard(card))
+        return new Player(playerJson["id"], playerJson["name"], cards);
+    }
 
 }
 
-export { Player, PlayerAggregate }
+interface PlayerType {
+    id: number,
+    name: string,
+    cards: Card[]
+}
+
+export { Player, PlayerAggregate, PlayerType }

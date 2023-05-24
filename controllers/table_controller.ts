@@ -5,6 +5,7 @@ import { Controller } from "./utils";
 import { Session } from '../modules/auth/session';
 import { server } from '../main';
 import { SessionManager } from '../modules/auth';
+import { CardAggregate } from '../models/card';
 class TableController extends Controller {
 
     async home(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
@@ -14,8 +15,12 @@ class TableController extends Controller {
         return super.httpResponse(res, 'index.html')
     }
 
-    async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
+    async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
         if(!session.hasTableId() || !(await TableManager.isPlaying(session))) {
+            return server.redirect(res, '/')
+        }
+        const tablesJson = await TableManager.readJsonFile()
+        if(!params?.id || params.id in tablesJson == false) {
             return server.redirect(res, '/')
         }
         return super.httpResponse(res, 'table.html')
@@ -36,7 +41,7 @@ class TableController extends Controller {
         const player = new Player(session.data.id, session.data.name)
         const playerAggregate = new PlayerAggregate()
         const newPlayerAggregate = playerAggregate.addPlayer(player)
-        const cardAggregate = TableBase.createCards();
+        const cardAggregate = CardAggregate.createNewCards();
         const table = new TableBase(cardAggregate, newPlayerAggregate);
         tables.push(table)
         await TableManager.writeJsonFile(table)
@@ -48,19 +53,13 @@ class TableController extends Controller {
     }
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
-        // const tableJson = await TableManager.readJsonFile()
-        // const tables = TableManager.toTables(tableJson)
-        // const player = new Player(session.data.id, session.data.name)
-        // const playerAggregate = new PlayerAggregate()
-        // const newPlayerAggregate = playerAggregate.addPlayer(player)
-        // const cardAggregate = TableBase.createCards();
-        // const table = new TableBase(cardAggregate, newPlayerAggregate);
-        // tables.push(table)
-        // await TableManager.writeJsonFile(table)
-        // const wss = server.getWSAllConnections()
-        // console.log(wss)
-        // super.WSResponse(tables, wss)
-        return super.jsonResponse(res, {})
+        const tablesJson = await TableManager.readJsonFile()
+        if(!params?.id || params.id in tablesJson == false) {
+            return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
+        }
+        const tableJson = tablesJson[params.id]
+        const table = TableBase.createTable(tableJson)
+        return super.jsonResponse(res, table)
     }
 
     async joinPlayer(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
@@ -75,15 +74,22 @@ class TableController extends Controller {
         }
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
-        const addedPlayerTable = table.addPlayer(player)
+        if(table.isMaxPlayersReached()) {
+            return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
+        }
 
-        await TableManager.writeJsonFile(addedPlayerTable)
-        const _tablesJson = await TableManager.readJsonFile()
-        const tables = TableManager.toTables(_tablesJson)
-        const newSession = session.joinTable(table.id)
+        let addedPlayerTable = table.addPlayer(player)
+
+        if(addedPlayerTable.isMaxPlayersReached()) {
+            addedPlayerTable = addedPlayerTable.start()
+        }
+        const newTablesJson = await TableManager.writeJsonFile(addedPlayerTable)
+        const tables = TableManager.toTables(newTablesJson)
+        const newSession = session.joinTable(addedPlayerTable.id)
         SessionManager.writeSessions(newSession)
         const wss = server.getWSAllConnections()
         super.WSResponse({tables: tables}, wss)
+
         const _wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
         super.WSResponse({table: addedPlayerTable}, _wss)
         return super.jsonResponse(res, addedPlayerTable)
@@ -94,7 +100,7 @@ class TableController extends Controller {
         const tableJson = await TableManager.readJsonFile()
         const tables = TableManager.toTables(tableJson)
         const table = tables[0]
-        const handedOverTable = table.shuffle().handOverCards()
+        const handedOverTable = table.start()
         await TableManager.writeJsonFile(handedOverTable)
         const wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
         super.WSResponse(handedOverTable, wss)
@@ -112,16 +118,38 @@ class TableController extends Controller {
         return super.jsonResponse(res, drawnTable)
     }
 
-    async discard(req: http.IncomingMessage, res: http.ServerResponse) {
-        const tableJson = await TableManager.readJsonFile()
-        const tables = TableManager.toTables(tableJson)
-        const table = tables[0]
+    async discard(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
+        const tablesJson = await TableManager.readJsonFile()
+        if(!params?.id || params.id in tablesJson == false) {
+            return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
+        }
+        const tableJson = tablesJson[params.id]
+        const table = TableBase.createTable(tableJson)
+        const cardJson = await super.getBody(req)
+        console.log(cardJson)
+        return super.jsonResponse(res, {});
         const card = table.playerAggregate.players[table.turn].cards[0];
         const discardedTable = table.discard(card)
         await TableManager.writeJsonFile(discardedTable)
         const wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
         super.WSResponse(discardedTable, wss)
         return super.jsonResponse(res, discardedTable);
+    }
+
+
+    async reset(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
+
+        const tablesJson = await TableManager.readJsonFile()
+        if(!params?.id || params.id in tablesJson == false) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
+        if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
+        const tableJson = tablesJson[params.id]
+        const table = TableBase.createTable(tableJson)
+        const nextTable = table.next()
+        await TableManager.writeJsonFile(nextTable)
+
+        const _wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
+        super.WSResponse({table: nextTable}, _wss)
+        return super.jsonResponse(res, nextTable)
     }
 
 }

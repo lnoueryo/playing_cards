@@ -1,5 +1,5 @@
 import { PlayerAggregate } from "../player";
-import { CardBase } from "./card";
+import { CardBase, RegularCard,JorkerCard, Card } from "./card";
 class CardAggregate {
 
     readonly cards: CardBase[];
@@ -8,6 +8,31 @@ class CardAggregate {
     constructor(cards: CardBase[], discards: CardBase[] = []) {
         this.cards = cards;
         this.discards = discards;
+    }
+
+    static createNewCards() {
+        const suitsNum = 4
+        const cards: CardBase[] = []
+
+        for (let i = 0; i < suitsNum; i++) {
+            for (let j = 1; j < 14; j++) {
+                const card = new RegularCard(i, j);
+                cards.push(card)
+            }
+        }
+
+        for (let i = 1; i < 3; i++) {
+            const joker = new JorkerCard(i)
+            cards.push(joker)
+        }
+
+        return new CardAggregate(cards);
+    }
+
+    static createCards(cardsJson: Card[], discardsJson: Card[] = []) {
+        const cards = cardsJson.map(card => CardBase.createCard(card));
+        const discards = discardsJson.map(card => CardBase.createCard(card));
+        return new CardAggregate(cards, discards)
     }
 
     shuffle() {

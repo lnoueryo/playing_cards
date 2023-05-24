@@ -1,10 +1,10 @@
-import { Player } from ".";
+import { Player, PlayerType } from ".";
 import { CardAggregate, CardBase } from "../card";
 
 
 class PlayerAggregate {
 
-    readonly players;
+    readonly players: Player[];
 
     constructor(players: Player[] = []) {
         this.players = players;
@@ -14,6 +14,13 @@ class PlayerAggregate {
         const players = this.players.slice();
         players.push(player);
         return new PlayerAggregate(players);
+    }
+
+    discardAll() {
+        const newPlayers = this.players.map((player) => {
+            return new Player(player.id, player.name)
+        })
+        return new PlayerAggregate(newPlayers)
     }
 
     shuffle() {
@@ -68,9 +75,16 @@ class PlayerAggregate {
         return turn >= this.players.length;
     }
 
+    static createPlayers(playersJson: PlayerType[]) {
+        const players = playersJson.map(player => {
+            return Player.createPlayer(player);
+        });
+        return new PlayerAggregate(players)
+    }
+
     get currentPlayerCount(): number {
         return this.players.length;
-      }
+    }
 
 }
 

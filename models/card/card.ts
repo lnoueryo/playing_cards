@@ -12,6 +12,9 @@ class CardBase implements Model {
         this.type = type;
         this.number = number;
     }
+    static createCard(card: Card) {
+        return card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"])
+    }
 }
 
 class RegularCard extends CardBase {
@@ -31,4 +34,9 @@ class JorkerCard extends CardBase {
     }
 }
 
-export {CardBase, RegularCard, JorkerCard}
+interface Card {
+    "id": number,
+    "type": number,
+    "number": number
+}
+export {CardBase, RegularCard, JorkerCard, Card}
