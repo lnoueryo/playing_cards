@@ -95,7 +95,7 @@ const changeDisplayForUser = () => {
 
 const discard = async(player, card) => {
   if(player.id != user.value.id || player.cards.length != 6) return;
-  const res = await axios.post('/api/table/' + user.value.tableId + '/discard', card);
+  const res = await axios.post('/api/table/' + user.value.tableId + '/next', card);
   console.debug(res)
 }
 
