@@ -1,6 +1,6 @@
 
 
-class HandRanking {
+class Ranking {
 
     readonly rank: number
     readonly highCard: number
@@ -8,6 +8,14 @@ class HandRanking {
     constructor(rank: number, highCard: number) {
         this.rank = rank;
         this.highCard = highCard;
+    }
+
+    isHandBetter(rank: number, cardNum: number) {
+        return rank > this.rank  || (rank === this.rank && cardNum > this.highCard);
+    }
+
+    output() {
+        console.log(RankNameMap[this.rank])
     }
 }
 
@@ -24,4 +32,4 @@ const RankNameMap: Record<number, string> = {
     9: 'Five of a Kind'
 };
 
-export { HandRanking }
+export { Ranking }

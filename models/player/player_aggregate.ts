@@ -71,6 +71,19 @@ class PlayerAggregate {
         return new PlayerAggregate(newPlayers);
     }
 
+    determineWinner(): PlayerAggregate {
+        const players = this.players.map((player) => player.analyzeHand())
+        return new PlayerAggregate(players);
+    }
+
+    protected compareHands() {
+        const newPlayers = this.players.slice().sort((a, b) => {
+            if (a.hand.ranking.rank !== b.hand.ranking.rank) return b.hand.ranking.rank - a.hand.ranking.rank;
+            return b.hand.ranking.highCard - a.hand.ranking.highCard;
+        })
+        return new PlayerAggregate(newPlayers);
+    }
+
     hasCompletedFullRound(turn: number) {
         return turn >= this.players.length;
     }

@@ -90,6 +90,15 @@ class TableBase implements Model {
         return new TableBase(this.cardAggregate, this.playerAggregate, this.maxPlayers, this.id, this.game + 1, this.round, this.turn);
     }
 
+    determineWinner() {
+        const playerAggregate = this.playerAggregate.determineWinner()
+        console.log(playerAggregate.players[0].hand)
+        playerAggregate.players.forEach((player) => {
+            player.hand.ranking.output()
+        })
+        return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.id, this.game, this.round, this.turn);
+    }
+
     isMaxPlayersReached() {
         return this.maxPlayers == this.playerAggregate.currentPlayerCount;
     }

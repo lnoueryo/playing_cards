@@ -5,19 +5,28 @@ import { Hand } from "./hand";
 
 
 class Player implements Model {
+
     readonly id: number;
     readonly name: string;
     readonly hand: Hand;
+
     constructor(id: number, name: string, hand: Hand = new Hand()) {
         this.id = id;
         this.name = name;
         this.hand = hand
     }
+
     addCard(card: CardBase) {
         return new Player(this.id, this.name, this.hand.addCard(card))
     }
+
     discard(unwantedCard: CardBase) {
         return new Player(this.id, this.name, this.hand.discard(unwantedCard))
+    }
+
+    analyzeHand() {
+        const hand = this.hand.analyzeHand()
+        return new Player(this.id, this.name, hand);
     }
 
     convertToJson() {
