@@ -9,7 +9,7 @@ class TableBase implements Model {
     readonly playerAggregate: PlayerAggregate;
     readonly id: string;
     readonly maxPlayers: number;
-    readonly maxRounds: number = 1;
+    readonly maxRounds: number = 5;
     readonly maxGames: number = 2;
     readonly game: number;
     readonly round: number;
@@ -112,6 +112,8 @@ class TableBase implements Model {
         const discardsJsonData = tableData["cardAggregate"]["discards"];
         const playersJson = tableData["playerAggregate"]["players"];
         const maxPlayers = tableData["maxPlayers"];
+        const maxRounds = tableData["maxRounds"];
+        const maxGames = tableData["maxGames"];
         const id = tableData["id"];
         const game = tableData["game"];
         const round = tableData["round"];
@@ -128,6 +130,8 @@ class TableBase implements Model {
             cardAggregate: this.cardAggregate.convertToJson(),
             playerAggregate: this.playerAggregate.convertToJson(),
             maxPlayers: this.maxPlayers,
+            maxRounds: this.maxRounds,
+            maxGames: this.maxGames,
             id: this.id,
             game: this.game,
             round: this.round,
@@ -139,37 +143,33 @@ class TableBase implements Model {
 
 interface Table {
     "cardAggregate": {
-        "cards": [
-            {
-                "type": number,
-                "number": number,
-                "id": number
-            },
-        ],
-        "discards": [
-            {
-                "type": number,
-                "number": number,
-                "id": number
-            },
-        ]
+        "cards": {
+            "type": number,
+            "number": number,
+            "id": number
+        }[],
+        "discards": {
+            "type": number,
+            "number": number,
+            "id": number
+        }[]
     },
     "playerAggregate": {
-        "players": [
-            {
-                "id": number,
-                "name": string,
-                "cards": [
-                    {
-                        "type": number,
-                        "number": number,
-                        "id": number
-                    },
-                ]
+        "players": {
+            "id": number,
+            "name": string,
+            "hand": {
+                "cards": {
+                    "type": number,
+                    "number": number,
+                    "id": number
+                }[]
             }
-        ]
+        }[]
     },
     "maxPlayers": number,
+    "maxRounds": number,
+    "maxGames": number,
     "id": string,
     "game": number,
     "round": number,

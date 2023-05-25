@@ -1,37 +1,35 @@
 import { Model } from "../utils";
 import { CardBase, Card } from "../card";
 import { PlayerAggregate } from './player_aggregate'
+import { Hand } from "./hand";
 
 
 class Player implements Model {
-    readonly id;
-    readonly name;
-    readonly cards;
-    constructor(id: number, name: string, cards: CardBase[] = []) {
+    readonly id: number;
+    readonly name: string;
+    readonly hand: Hand;
+    constructor(id: number, name: string, hand: Hand = new Hand()) {
         this.id = id;
         this.name = name;
-        this.cards = cards
+        this.hand = hand
     }
     addCard(card: CardBase) {
-        const cards = this.cards.slice();
-        cards.push(card);
-        return new Player(this.id, this.name, cards)
+        return new Player(this.id, this.name, this.hand.addCard(card))
     }
     discard(unwantedCard: CardBase) {
-        const cards = this.cards.filter((card) => card.id != unwantedCard.id);
-        return new Player(this.id, this.name, cards)
+        return new Player(this.id, this.name, this.hand.discard(unwantedCard))
     }
 
     convertToJson() {
         return {
             id: this.id,
             name: this.name,
-            cards: this.cards.map(card => card.convertToJson())
+            hand: this.hand.convertToJson()
         };
     }
 
     static createPlayer(playerJson: PlayerType) {
-        const cards = playerJson.cards.map((card) => CardBase.createCard(card))
+        const cards = Hand.createHand(playerJson["hand"])
         return new Player(playerJson["id"], playerJson["name"], cards);
     }
 
@@ -40,7 +38,9 @@ class Player implements Model {
 interface PlayerType {
     id: number,
     name: string,
-    cards: Card[]
+    hand: {
+        cards: Card[]
+    }
 }
 
-export { Player, PlayerAggregate, PlayerType }
+export { Player, PlayerAggregate, PlayerType, Hand }

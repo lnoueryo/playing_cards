@@ -1,7 +1,7 @@
 <template>
   <div class="container" :style="{ height: containerHeight, width: containerHeight }" v-if="table.playerAggregate">
     <div class="item" v-for="(player, index) in table.playerAggregate.players" :key="player.id" :style="cardStyle(index)">
-      <div class="card" v-for="(card, id) in sort(player.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -125 +'px' : 0}" @click="discard(player, card)">
+      <div class="card" v-for="(card, id) in sort(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -125 +'px' : 0}" @click="discard(player, card)">
         <img style="width: 100%" :src="getImgPath(card)" alt="">
       </div>
       <div class="player-name">{{ player.name }}</div>
@@ -94,7 +94,7 @@ const changeDisplayForUser = () => {
 }
 
 const discard = async(player, card) => {
-  if(player.id != user.value.id || player.cards.length != 6) return;
+  if(player.id != user.value.id || player.hand.cards.length != 6) return;
   const res = await axios.post('/api/table/' + user.value.tableId + '/next', card);
   console.debug(res)
 }

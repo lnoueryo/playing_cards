@@ -24,26 +24,33 @@ class CardBase implements Model {
     }
 }
 
+
 class RegularCard extends CardBase {
-    constructor(type: number, number: number) {
-        const id = type * 13 + number
+
+    constructor(type: number, number: number, id: number = type * 13 + number) {
         super(id, type, number);
     }
 }
 
+
 class JorkerCard extends CardBase {
+
     constructor(number: number) {
-        const id = 13 * 4 + number
+        const type = 4;
+        const id = 13 * type + number
         super(id, 4, number);
     }
+
     get name() {
         return '';
     }
 }
+
 
 interface Card {
     "id": number,
     "type": number,
     "number": number
 }
+
 export {CardBase, RegularCard, JorkerCard, Card}

@@ -6,6 +6,7 @@ import { Session } from '../modules/auth/session';
 import { server } from '../main';
 import { SessionManager } from '../modules/auth';
 import { CardAggregate, CardBase } from '../models/card';
+import { PokerJudge } from '../models/poker_judge';
 class TableController extends Controller {
 
     async home(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
@@ -120,6 +121,8 @@ class TableController extends Controller {
     }
 
     async next(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
+        // TODO
+        // ゲーム終了時の処理。現状ドローしなくなり、gameが+1になる。
         const tablesJson = await TableManager.readJsonFile()
         if(!params?.id || params.id in tablesJson == false) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         if(session.isNotMatchingTableId(session.data.tableId)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
@@ -129,10 +132,27 @@ class TableController extends Controller {
         const card = CardBase.createCard(JSON.parse(cardJson))
         const discardedTable = table.discard(card)
         if(discardedTable.isGameEndRoundReached()) {
+            const RankNameMap: Record<number, string> = {
+                0: 'High Card',
+                1: 'One Pair',
+                2: 'Two Pairs',
+                3: 'Three of a Kind',
+                4: 'Straight',
+                5: 'Flush',
+                6: 'Full House',
+                7: 'Four of a Kind',
+                8: 'Straight Flush',
+                9: 'Five of a Kind'
+            };
             const endGameTable = discardedTable.endGame()
+            const pj = new PokerJudge(endGameTable.playerAggregate.players)
+            pj.determineWinner().forEach(player => {
+                console.log(player.name, RankNameMap[pj.analyzeHand(player.hand).rank]);
+            });
             await TableManager.writeJsonFile(endGameTable)
             const wss = server.getWSConnections(endGameTable.getPlayerIds())
             super.WSResponse({table: endGameTable}, wss)
+            return super.jsonResponse(res, endGameTable);
         }
         const drawCardTable = discardedTable.drawCard()
         await TableManager.writeJsonFile(drawCardTable)
