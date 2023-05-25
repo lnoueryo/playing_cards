@@ -3,7 +3,7 @@ import http from 'http';
 import path from 'path';
 import url from 'url';
 import * as WebSocket from 'ws';
-import { TableController, LoginController } from './controllers'
+import { TableController, HomeController, LoginController } from './controllers'
 import { SessionManager } from './modules/auth';
 import { Session } from './modules/auth/session';
 
@@ -17,6 +17,7 @@ class Server {
 
   constructor(private port: number) {
     const tableController = new TableController()
+    const homeController = new HomeController()
     const loginController = new LoginController()
 
     this.noAuthRequiredPaths = {
@@ -30,19 +31,18 @@ class Server {
 
     this.routeHandlers = {
       'GET': {
-        '/': tableController.home,
+        '/': homeController.index,
         '/table/:id': tableController.index,
-        '/api/table': tableController.tables,
+        '/api/table': homeController.tables,
         '/api/table/:id': tableController.show,
-        '/start': tableController.start,
-        '/draw': tableController.draw,
         '/api/user': loginController.user,
       },
       'POST': {
-        '/api/table/create': tableController.create,
-        '/api/table/:id/join': tableController.joinPlayer,
+        '/api/table/create': homeController.create,
+        '/api/table/:id/join': homeController.joinPlayer,
         '/api/table/:id/reset': tableController.reset,
         '/api/table/:id/next': tableController.next,
+        '/api/table/:id/exit': tableController.exit,
       }
     };
   }
