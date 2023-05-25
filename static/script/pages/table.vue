@@ -1,13 +1,29 @@
 <template>
   <div class="container" :style="{ height: containerHeight, width: containerHeight }" v-if="table.playerAggregate">
-    <div class="item" v-for="(player, index) in table.playerAggregate.players" :key="player.id" :style="cardStyle(index)">
-      <div class="card" v-for="(card, id) in sort(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -125 +'px' : 0}" @click="discard(player, card)">
+    <div class="item" v-for="(player, index) in sortPlayers(table.playerAggregate.players)" :key="player.id" :style="cardStyle(index)">
+      <div class="card" v-for="(card, id) in sortCards(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -100 +'px' : 0}" @click="discard(player, card)">
         <img style="width: 100%" :src="getImgPath(card)" alt="">
       </div>
+      <div class="host" style="width: 32px;height: 32px;background-color: cadetblue;border-radius: 50%;" v-if="player.id == table.playerAggregate.players[0].id"></div>
       <div class="player-name">{{ player.name }}</div>
     </div>
-    <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%)">
-    <button @click="reset">reset</button>
+    <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);text-align: center;">
+      <div style="position: relative">
+        <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);width: 128px;height: 128px;">
+          <div style="position: absolute;max-width: 80px;width: 100%" :style="discardsStyle[index]" v-for="(card, index) in table.cardAggregate.discards" :key="card.id">
+            <img style="width: 100%" :src="getImgPath(card)" alt="">
+          </div>
+        </div>
+        <div style="position: relative;z-index: 2;background-color: #ffffffbf">
+          <div v-if="table.maxPlayers == table.playerAggregate.players.length">
+            <div>{{ showGame }}</div>
+            <div>{{ showRound }}</div>
+          </div>
+          <div v-else>
+            <button @click="leaveTable">退出</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -33,7 +49,18 @@ const handleResize = () => {
 const table = ref({})
 const user = ref('')
 
-const sort = (cards) => {
+const discardsStyle = computed(() => {
+  const styles = []
+  for (let card = 0; card < 54; card++) {
+    const left = Math.floor(Math.random() * 101);
+    const right = Math.floor(Math.random() * 101);
+    const rotation = Math.floor(Math.random() * 360);
+    styles.push({ left: `${left}%`, top: `${right}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`})
+  }
+  return styles
+})
+
+const sortCards = (cards) => {
   let drawCard;
   if(cards.length == 6) {
     drawCard = cards[cards.length - 1]
@@ -62,6 +89,14 @@ const positions = computed(() => {
   });
 })
 
+const showRound = computed(() => {
+  return table.value.round  == table.value.maxRounds - 1 ? 'ラストラウンド' : `${table.value.round + 1}ラウンド目`
+})
+
+const showGame = computed(() => {
+  return table.value.game == table.value.maxGames - 1 ? 'ラストゲーム' : `${table.value.game + 1}戦目`
+})
+
 const cardStyle = (index) => {
   return { left: positions.value[index].left, top: positions.value[index].top, transform: positions.value[index].transform, width: index == 0 ? positions.value[index].width * 2 + '%' : positions.value[index].width + '%' }
 }
@@ -81,16 +116,12 @@ const fetchUser = async() => {
   user.value = res.data
   await fetchTable()
   connectWebsocket(user)
-  changeDisplayForUser()
 }
 
-const changeDisplayForUser = () => {
-  const userIndex = table.value.playerAggregate.players.findIndex(player => player.id === user.value.id);
-
-  if(userIndex !== -1) {
-      table.value.playerAggregate.players = table.value.playerAggregate.players.slice(userIndex).concat(table.value.playerAggregate.players.slice(0, userIndex));
-      console.log(table.value.playerAggregate.players);
-  }
+const sortPlayers = (players) => {
+  const userIndex = players.findIndex(player => player.id === user.value.id);
+  if(userIndex !== -1) return players.slice(userIndex).concat(players.slice(0, userIndex));
+  return players
 }
 
 const discard = async(player, card) => {
@@ -99,10 +130,15 @@ const discard = async(player, card) => {
   console.debug(res)
 }
 
-const reset = async() => {
-  const res = await axios.post('/api/table/' + user.value.tableId + '/reset');
-  console.debug(res.data)
+const leaveTable = async(player, card) => {
+  const res = await axios.post('/api/table/' + user.value.tableId + '/exit');
+  if(res.status == 200) return location.href = '/';
 }
+
+// const reset = async() => {
+//   const res = await axios.post('/api/table/' + user.value.tableId + '/reset');
+//   console.debug(res.data)
+// }
 
 const connectWebsocket = (user) => {
   const url = 'ws://localhost:3000';
@@ -114,13 +150,18 @@ const connectWebsocket = (user) => {
   connection.onerror = (error) => {
     console.log(`WebSocket error: ${error}`);
   };
-
+  connection.onclose = (e) => {
+    console.log('WebSocket connection closed, retrying...');
+    setTimeout(() => {
+      connectWebsocket(user);
+    }, 5000); // retry after 5 seconds
+  };
   connection.onmessage = (e) => {
     const tableJson = JSON.parse(e.data)
     if('table' in tableJson) {
-      console.log(e.data, 'table');
+      console.log(tableJson)
+      if(!tableJson.table) return location.href = '/'
       table.value = tableJson.table
-      changeDisplayForUser()
     }
   };
 }
@@ -137,7 +178,7 @@ fetchUser()
 .item {
   position: absolute;
   transform: translate(-50%, -50%);
-  /* padding: 0 128px; */
+  padding: 0 48px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -145,7 +186,7 @@ fetchUser()
 
 .card {
   display: flex;
-  margin-bottom: 16px;
+  margin: 16px 4px;
   position: relative;
   max-width: 100px
 }
@@ -153,7 +194,11 @@ fetchUser()
 .player-name {
   position: absolute;
   top: 100%;
-  /* left: 50%;
-  transform: translateX(-50%); */
+}
+
+.host {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
 }
 </style>

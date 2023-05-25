@@ -21,8 +21,26 @@ class Session {
         return new Session(this.sessionId, this.data)
     }
 
+    get id() {
+        return this.data.id;
+    }
+
+    get name() {
+        return this.data.name;
+    }
+
+    get tableId() {
+        return this.data.tableId;
+    }
+
     hasTableId() {
-        return !!this.data.tableId
+        return !!this.tableId
+    }
+
+    deleteTableId() {
+        const data = this.data;
+        data['tableId'] = '';
+        return new Session(this.sessionId, data)
     }
 
     isNotMatchingTableId(tableId: string) {

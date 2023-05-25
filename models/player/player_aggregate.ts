@@ -76,6 +76,12 @@ class PlayerAggregate {
         return new PlayerAggregate(players);
     }
 
+    leaveTable(id: number) {
+        const players = this.players.slice();
+        const newPlayers = players.filter(player => player.id != id)
+        return new PlayerAggregate(newPlayers)
+    }
+
     protected compareHands() {
         const newPlayers = this.players.slice().sort((a, b) => {
             if (a.hand.ranking.rank !== b.hand.ranking.rank) return b.hand.ranking.rank - a.hand.ranking.rank;
@@ -88,8 +94,16 @@ class PlayerAggregate {
         return turn >= this.players.length;
     }
 
+    otherPlayersNotExist() {
+        return this.players.length < 2;
+    }
+
     getPlayerIds() {
         return this.players.map((player) => player.id)
+    }
+
+    getPlayerInTurn(turn: number) {
+        return this.players[turn];
     }
 
     convertToJson() {

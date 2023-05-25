@@ -32,10 +32,27 @@ class TableManager {
         }
     }
 
+    // JSONファイルへの書き込み
+    static async deleteJsonFile(table: TableBase): Promise<{[key: string]: Table}> {
+        try {
+            const tablesJson = await TableManager.readJsonFile()
+            delete tablesJson[table.id]
+            await fs.writeFile(TableManager.filePath, JSON.stringify(tablesJson, null, 2), 'utf8');
+            return tablesJson
+        } catch (err) {
+            console.error(`Error writing file on disk: ${err}`);
+            return {}
+        }
+    }
+
     // JSONファイルの読み取り
-    static async isPlaying(session: Session): Promise<boolean> {
-        const data = await TableManager.readJsonFile()
-        return session.data.tableId in data && data[session.data.tableId].playerAggregate.players.some((player) => player.id == session.data.id)
+    static tableNotExists(id: string, tablesJson: {[key: string]: Table}): boolean {
+        return id in tablesJson == false;
+    }
+
+    // JSONファイルの読み取り
+    static isPlaying(session: Session, tablesJson: {[key: string]: Table})  {
+        return tablesJson[session.tableId].playerAggregate.players.some((player) => player.id == session.id)
     }
 
     static toTables(tableJson: {[key: string]: Table}): TableBase[] {

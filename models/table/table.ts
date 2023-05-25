@@ -9,7 +9,7 @@ class TableBase implements Model {
     readonly playerAggregate: PlayerAggregate;
     readonly id: string;
     readonly maxPlayers: number;
-    readonly maxRounds: number = 5;
+    readonly maxRounds: number = 3;
     readonly maxGames: number = 2;
     readonly game: number;
     readonly round: number;
@@ -99,6 +99,15 @@ class TableBase implements Model {
         return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.id, this.game, this.round, this.turn);
     }
 
+    leaveTable(id: number) {
+        const playerAggregate = this.playerAggregate.leaveTable(id)
+        return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.id)
+    }
+
+    getPlayerInTurn(): Player {
+        return this.playerAggregate.getPlayerInTurn(this.turn)
+    }
+
     isMaxPlayersReached() {
         return this.maxPlayers == this.playerAggregate.currentPlayerCount;
     }
@@ -109,6 +118,10 @@ class TableBase implements Model {
 
     isGameEndReached() {
         return this.maxGames == this.game;
+    }
+
+    otherPlayersNotExist() {
+        return this.playerAggregate.otherPlayersNotExist()
     }
 
     getPlayerIds() {
