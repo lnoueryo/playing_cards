@@ -29,6 +29,20 @@ class SessionManager {
         }
     }
 
+    static deleteSession(session: Session) {
+        // JSONファイルからセッションデータを読み込む
+        let sessions = SessionManager.readSessions();
+
+        // セッションデータが存在すれば削除する
+        if (sessions[session.id]) {
+            delete sessions[session.id];
+
+            // 更新したセッションデータをJSONファイルに保存する
+            const data = JSON.stringify(sessions, null, 2);
+            fs.writeFileSync(SessionManager.sessionsFilePath, data, 'utf8');
+        }
+    }
+
     static setCookie(res: http.ServerResponse, value: string): void {
         let date = new Date();
         date.setFullYear(date.getFullYear() + 10); // 10年後の日付を設定
@@ -44,6 +58,11 @@ class SessionManager {
 
         const value = cookieString.split('=')[1];
         return value;
+    }
+
+    static expireCookie(res: http.ServerResponse) {
+        // クッキーを削除するために、有効期限を過去に設定する
+        res.setHeader('Set-Cookie', `${SessionManager.cookieKey}=deleted; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`);
     }
 
     private static readSessions(): {[key: string]: User} {

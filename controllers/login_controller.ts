@@ -49,6 +49,19 @@ class LoginController extends Controller {
             return super.jsonResponse(res, response);
         }
     }
+
+    async logout(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
+        try {
+            SessionManager.deleteSession(session)
+            SessionManager.expireCookie(res)
+            return super.jsonResponse(res, {});
+        } catch (error) {
+            // エラーハンドリング
+            console.error('ログアウトエラー:', error);
+            const response = { message: 'ログアウト中にエラーが発生しました' };
+            return super.jsonResponse(res, response);
+        }
+    }
 }
 
 export { LoginController }

@@ -38,6 +38,7 @@ class Server {
         '/api/user': loginController.user,
       },
       'POST': {
+        '/api/logout': loginController.logout,
         '/api/table/create': homeController.create,
         '/api/table/:id/join': homeController.joinPlayer,
         '/api/table/:id/reset': tableController.reset,
