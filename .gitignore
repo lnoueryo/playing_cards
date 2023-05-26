@@ -2,3 +2,6 @@ node_modules
 pra*
 storage
 main.js
+a.txt
+certs
+.well-known

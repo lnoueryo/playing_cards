@@ -1,4 +1,5 @@
 import fs from 'fs';
+import https from 'https';
 import http from 'http';
 import path from 'path';
 import url from 'url';
@@ -15,7 +16,7 @@ class Server {
   private routeHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
   private clients = new Map<number, WebSocket.WebSocket>();
 
-  constructor(private port: number) {
+  constructor(private httpPort: number, private httpsPort: number) {
     const tableController = new TableController()
     const homeController = new HomeController()
     const loginController = new LoginController()
@@ -63,38 +64,69 @@ class Server {
   };
 
   start() {
-    const server = http.createServer((req: http.IncomingMessage, res: http.ServerResponse) => {
-      const requestUrl = url.parse(req.url || '', true);
-      const pathname = requestUrl.pathname || '/';
-
-      // 静的ファイルへのリクエストに対する処理
-      if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
-
-      // 認証が不要なパスに対する処理
-      if (req.method && pathname in this.noAuthRequiredPaths[req.method]) {
-        const session = SessionManager.authorize(req);
-        if (session) return this.backToPreviousPage(req, res);
-        return this.noAuthRequiredPaths[req.method][pathname](req, res);
+    const privateKey = fs.readFileSync('./certs/rsa.pem');
+    const certificate = fs.readFileSync('./certs/cert.pem');
+    const options: https.ServerOptions = {
+      key: privateKey,
+      cert: certificate
+    };
+    const httpsServer = https.createServer(options, (req: http.IncomingMessage, res: http.ServerResponse) => {
+      this.routingHandler(req, res)
+    });
+    const httpServer = http.createServer((req, res) => {
+      console.log(req.headers['host'])
+      let host = req.headers['host'] as string;
+      if (host.includes(':3000')) {
+          host = host.replace(':3000', ':3443');
       }
+      res.writeHead(301, { "Location": "https://" + host + req.url });
+      res.end();
+    });
+    this.createWebsocketServer(httpsServer)
+    // this.createWebsocketServer(httpServer)
+    httpsServer.listen(this.httpsPort, () => {
+      console.log(`HTTPS server is running on port ${this.httpsPort}`);
+    });
+    httpServer.listen(this.httpPort, () => {
+      console.log(`HTTP server is running on port ${this.httpPort}`);
+    });
+  }
 
-      // 認証
+  routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+    const requestUrl = url.parse(req.url || '', true);
+    const pathname = requestUrl.pathname || '/';
+
+    // 静的ファイルへのリクエストに対する処理
+    if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
+
+    // 認証が不要なパスに対する処理
+    if (req.method && pathname in this.noAuthRequiredPaths[req.method]) {
       const session = SessionManager.authorize(req);
-      if (!session) return this.redirect(res, '/login');
+      if (session) return this.backToPreviousPage(req, res);
+      console.log(`Received request: ${req.method} ${req.url} ${req.socket.remoteAddress}`);
+      return this.noAuthRequiredPaths[req.method][pathname](req, res);
+    }
 
-      // ルーティング
-      if (req.method) {
-        for (const pattern in this.routeHandlers[req.method]) {
-          const params = this.matchPath(pattern, pathname);
-          if (params) {
-            return this.routeHandlers[req.method][pattern](req, res, session, params);
-          }
+    // 認証
+    const session = SessionManager.authorize(req);
+    if (!session) return this.redirect(res, '/login');
+
+    // ルーティング
+    if (req.method) {
+      for (const pattern in this.routeHandlers[req.method]) {
+        const params = this.matchPath(pattern, pathname);
+        if (params) {
+          console.log(`Received request: ${req.method} ${req.url} ${req.socket.remoteAddress}`);
+          return this.routeHandlers[req.method][pattern](req, res, session, params);
         }
       }
+    }
 
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Error: Not Found');
-    });
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Error: Not Found');
+  }
 
+  createWebsocketServer(server: https.Server | http.Server) {
     // WebSocketサーバーの作成
     const wss = new WebSocket.Server({ server });
 
@@ -111,11 +143,7 @@ class Server {
         // });
       });
 
-      // ws.send('connect!');
-    });
-
-    server.listen(this.port, () => {
-      console.log(`Server running at http://localhost:${this.port}/`);
+      ws.send('connect!');
     });
   }
 
