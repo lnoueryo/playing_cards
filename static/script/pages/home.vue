@@ -19,13 +19,18 @@ const goToTable = (path) => {
 }
 const tables = ref([])
 const user = ref('')
+const table = {
+  "maxPlayers": 4,
+  "maxRounds": 3,
+  "maxGames": 1,
+}
 const fetchTables = async() => {
   const res = await axios.get('/api/table');
   tables.value = res.data
 }
 
 const createTable = async() => {
-  const res = await handleAsync(async() => await axios.post('/api/table/create'));
+  const res = await handleAsync(async() => await axios.post('/api/table/create', table));
   if(res.status == 200) return goToTable(res.data.id)
 }
 
