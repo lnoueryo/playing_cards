@@ -30,7 +30,7 @@
 <script setup>
 import axios from 'axios';
 import { onMounted, onUnmounted,computed, reactive, ref } from 'vue'
-import {handleAsync} from '../utils'
+import {handleAsync, WebsocketConnector } from '../utils'
 
 const containerHeight = ref(`${window.innerHeight - 30}px`)
 
@@ -115,7 +115,8 @@ const fetchUser = async() => {
   const res = await handleAsync(async() => await axios.get('/api/user'));
   user.value = res.data
   await fetchTable()
-  connectWebsocket(user)
+  websocketConnector.value = new WebsocketConnector(user.value.id, websocketHandler)
+  websocketConnector.value.connectWebsocket()
 }
 
 const sortPlayers = (players) => {
@@ -140,31 +141,18 @@ const leaveTable = async(player, card) => {
 //   console.debug(res.data)
 // }
 
-const connectWebsocket = (user) => {
-  const url = 'ws://localhost:3000';
-  const connection = new WebSocket(url);
-  connection.onopen = () => {
-    connection.send(user.value.id);
-  };
-
-  connection.onerror = (error) => {
-    console.log(`WebSocket error: ${error}`);
-  };
-  connection.onclose = (e) => {
-    console.log('WebSocket connection closed, retrying...');
-    setTimeout(() => {
-      connectWebsocket(user);
-    }, 5000); // retry after 5 seconds
-  };
-  connection.onmessage = (e) => {
-    const tableJson = JSON.parse(e.data)
-    if('table' in tableJson) {
-      console.log(tableJson)
-      if(!tableJson.table) return location.href = '/'
-      table.value = tableJson.table
-    }
-  };
+const websocketHandler = (e) => {
+  const tableJson = JSON.parse(e.data)
+  if('table' in tableJson) {
+    console.log(tableJson)
+    if(!tableJson.table) return location.href = '/'
+    table.value = tableJson.table
+  }
 }
+
+
+const websocketConnector = ref('')
+
 
 fetchUser()
 

@@ -1,6 +1,7 @@
 <template>
 {{user}}
   <button @click="createTable">作成</button>
+    <button @click="logout()">ログアウト</button>
     <div v-for="(table, i) in tables" :key="i" style="width: 160px;height: 160px;border: solid 1px black">
       <div v-for="player in table.playerAggregate.players" :key="player.id">
         {{ player.id }}: {{ player.name }}
@@ -11,7 +12,7 @@
 <script setup>
 import axios from 'axios';
 import { reactive, ref } from 'vue'
-import {handleAsync} from '../utils'
+import {handleAsync, WebsocketConnector} from '../utils'
 
 const goToTable = (path) => {
   location.href = '/table/' + path;
@@ -31,7 +32,8 @@ const createTable = async() => {
 const fetchUser = async() => {
   const res = await handleAsync(async() => await axios.get('/api/user'));
   user.value = res.data
-  connectWebsocket(user)
+  websocketConnector.value = new WebsocketConnector(user.value.id, websocketHandler)
+  websocketConnector.value.connectWebsocket()
 }
 
 const joinTable = async(table) => {
@@ -41,24 +43,19 @@ const joinTable = async(table) => {
   // goToTable(table.id)
 }
 
-const connectWebsocket = (user) => {
-  const url = 'ws://localhost:3000';
-  const connection = new WebSocket(url);
-  connection.onopen = () => {
-    connection.send(user.value.id);
-  };
-
-  connection.onerror = (error) => {
-    console.log(`WebSocket error: ${error}`);
-  };
-
-  connection.onmessage = (e) => {
-    const tablesJson = JSON.parse(e.data)
-    if('tables' in tablesJson) {
-      tables.value = tablesJson.tables
-    }
-  };
+const logout = async() => {
+  const res = await handleAsync(async() => await axios.post(`/api/logout`));
+  if(res.status == 200) return location.href = '/login'
 }
+
+const websocketHandler = (e) => {
+  const tablesJson = JSON.parse(e.data)
+  if('tables' in tablesJson) {
+    tables.value = tablesJson.tables
+  }
+}
+
+const websocketConnector = ref('')
 
 fetchTables()
 fetchUser()

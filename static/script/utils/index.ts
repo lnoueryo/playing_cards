@@ -1,4 +1,5 @@
 // AxiosResponse型をインポートします
+import { WebsocketConnector } from './websocket';
 import { AxiosResponse } from 'axios';
 
 // Promise<any>を返す非同期関数を表す型を定義します
@@ -10,3 +11,5 @@ export const handleAsync = async(handler: AsyncFunction): Promise<any | AxiosRes
     return error.response
   }
 }
+
+export { WebsocketConnector }
