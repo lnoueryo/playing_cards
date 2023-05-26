@@ -1,7 +1,7 @@
 import http from 'http';
 import { Controller } from "./utils";
 import { SessionManager } from '../modules/auth';
-import { Session } from '../modules/auth/session';
+import { Session, User } from '../modules/auth/session';
 
 
 class LoginController extends Controller {
@@ -22,8 +22,7 @@ class LoginController extends Controller {
     async login(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
             // リクエストのボディからemailとpasswordを取得
-            const body = await super.getBody(req);
-            const { email, password } = JSON.parse(body);
+            const { email, password } = await super.getBody(req) as User;
 
             // ログイン情報をJSONファイルから取得
             const loginData = super.getLoginData();

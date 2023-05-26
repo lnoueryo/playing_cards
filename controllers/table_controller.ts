@@ -1,11 +1,9 @@
 import http from 'http';
-import { Player, PlayerAggregate } from "../models/player";
 import { TableBase, TableManager } from "../models/table";
 import { Controller } from "./utils";
 import { Session } from '../modules/auth/session';
 import { server } from '../main';
-import { SessionManager } from '../modules/auth';
-import { CardAggregate, CardBase } from '../models/card';
+import { Card, CardBase } from '../models/card';
 
 
 class TableController extends Controller {
@@ -37,8 +35,8 @@ class TableController extends Controller {
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
 
-        const cardJson = await super.getBody(req)
-        const card = CardBase.createCard(JSON.parse(cardJson))
+        const cardJson = await super.getBody(req) as Card
+        const card = CardBase.createCard(cardJson)
         const discardedTable = table.discard(card)
 
         const wss = server.getWSConnections(discardedTable.getPlayerIds())

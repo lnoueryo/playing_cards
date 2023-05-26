@@ -6,6 +6,7 @@ import { Session } from '../modules/auth/session';
 import { server } from '../main';
 import { SessionManager } from '../modules/auth';
 import { CardAggregate } from '../models/card';
+import { Table } from '../models/table/table';
 
 
 class HomeController extends Controller {
@@ -27,6 +28,7 @@ class HomeController extends Controller {
     }
 
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
+        const {maxPlayers, maxRounds, maxGames} = await super.getBody(req) as Table
         const tablesJson = await TableManager.readJsonFile()
         if(session.hasTableId() && !TableManager.tableNotExists(session.tableId, tablesJson) && TableManager.isPlaying(session, tablesJson)) {
             return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
@@ -36,8 +38,7 @@ class HomeController extends Controller {
         const playerAggregate = new PlayerAggregate()
         const newPlayerAggregate = playerAggregate.addPlayer(player)
         const cardAggregate = CardAggregate.createNewCards();
-        const maxPlayers = 3;
-        const table = new TableBase(cardAggregate, newPlayerAggregate, maxPlayers);
+        const table = new TableBase(cardAggregate, newPlayerAggregate, maxPlayers, maxRounds, maxGames);
         tables.push(table)
 
         // テーブル追加&&テーブルidセッションに追加

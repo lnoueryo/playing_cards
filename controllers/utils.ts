@@ -57,7 +57,7 @@ class Controller {
     }
     // getWSAllConnections
     protected async getBody(req: http.IncomingMessage) {
-        return new Promise<string>((resolve, reject) => {
+        return new Promise<{}>((resolve, reject) => {
             let body = '';
             req.on('readable', () => {
                 let chunk;
@@ -67,7 +67,7 @@ class Controller {
             });
 
             req.on('end', () => {
-                resolve(body);
+                resolve(JSON.parse(body));
             });
 
             req.on('error', (error) => {
