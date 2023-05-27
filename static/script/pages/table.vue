@@ -18,6 +18,7 @@
           <div v-if="table.maxPlayers == table.playerAggregate.players.length">
             <div>{{ showGame }}</div>
             <div>{{ showRound }}</div>
+            <div v-if="time < 11">{{ time }}</div>
           </div>
           <div v-else>
             <button @click="leaveTable">退出</button>
@@ -108,7 +109,8 @@ const getImgPath = (card) => {
 const fetchTable = async() => {
   const res = await axios.get('/api/table/' + user.value.tableId);
   console.debug(res.data)
-  table.value = res.data
+  table.value = res.data.table
+  if(user.value.id in res.data) setCountDown(res.data)
 }
 
 const fetchUser = async() => {
@@ -127,6 +129,7 @@ const sortPlayers = (players) => {
 
 const discard = async(player, card) => {
   if(player.id != user.value.id || player.hand.cards.length != 6) return;
+  resetTimer()
   const res = await axios.post('/api/table/' + user.value.tableId + '/next', card);
   console.debug(res)
 }
@@ -141,17 +144,39 @@ const leaveTable = async(player, card) => {
 //   console.debug(res.data)
 // }
 
+const setCountDown = (dataJson) => {
+  console.log(dataJson)
+  intervalId.value = setInterval(() => {
+    const start = dataJson[user.value.id].time.start
+    const elapsed = Date.now() - start; // 経過時間を計算
+    const remaining = dataJson[user.value.id].time.timeout - elapsed; // 残り時間を計算
+    if (remaining <= 0) resetTimer();
+    else time.value = Math.floor(remaining / 1000);
+  }, 1000); // 1秒ごとに残り時間を表示
+}
+
+const resetTimer = () => {
+  clearInterval(intervalId.value);
+  time.value = NaN;
+}
+
 const websocketHandler = (e) => {
-  const tableJson = JSON.parse(e.data)
-  if('table' in tableJson) {
-    console.log(tableJson)
-    if(!tableJson.table) return location.href = '/'
-    table.value = tableJson.table
+  const dataJson = JSON.parse(e.data)
+  console.log(dataJson)
+  console.log(user.value)
+  // テーブルのデータ
+  if('table' in dataJson) {
+    if(!dataJson.table) return location.href = '/'
+    table.value = dataJson.table
   }
+  // ユーザー特有の処理
+  if(user.value.id in dataJson) setCountDown(dataJson)
 }
 
 
 const websocketConnector = ref('')
+const intervalId = ref(null)
+const time = ref(NaN)
 
 
 fetchUser()

@@ -20,8 +20,8 @@ const goToTable = (path) => {
 const tables = ref([])
 const user = ref('')
 const table = {
-  "maxPlayers": 4,
-  "maxRounds": 3,
+  "maxPlayers": 2,
+  "maxRounds": 4,
   "maxGames": 1,
 }
 const fetchTables = async() => {

@@ -23,6 +23,10 @@ class Hand {
         return new Hand(cards)
     }
 
+    getDrawnCard() {
+        return this.cards[this.cards.length - 1]
+    }
+
     analyzeHand() {
         const hands = this.generateHands();
 

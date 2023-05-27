@@ -13,7 +13,7 @@ class Player implements Model {
     constructor(id: number, name: string, hand: Hand = new Hand()) {
         this.id = id;
         this.name = name;
-        this.hand = hand
+        this.hand = hand;
     }
 
     addCard(card: CardBase) {
@@ -27,6 +27,11 @@ class Player implements Model {
     analyzeHand() {
         const hand = this.hand.analyzeHand()
         return new Player(this.id, this.name, hand);
+    }
+
+    getDrawnCard() {
+        if(this.hand.cards.length != 6) throw(`the player in turn doesn't have correct number of cards: ${this.hand.cards.length}`)
+        return this.hand.getDrawnCard()
     }
 
     convertToJson() {

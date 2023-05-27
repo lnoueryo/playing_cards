@@ -94,7 +94,6 @@ class TableBase implements Model {
 
     determineWinner() {
         const playerAggregate = this.playerAggregate.determineWinner()
-        console.log(playerAggregate.players[0].hand)
         playerAggregate.players.forEach((player) => {
             player.hand.ranking.output()
         })
