@@ -117,6 +117,8 @@ class TableController extends Controller {
         if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400); // 自分が所属しているテーブルかどうか
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
+        // ゲームが既に始まっている場合
+        if(table.isMaxPlayersReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(table.otherPlayersNotExist()) {
             await TableManager.deleteJsonFile(table)
         } else {
@@ -157,27 +159,33 @@ class TableController extends Controller {
         const discardedTable = table.discard(card)
 
         const wss = server.getWSConnections(discardedTable.getPlayerIds())
+        // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
             const endGameTable = discardedTable.determineWinner().endGame()
             const tablesJson = await TableManager.writeJsonFile(endGameTable)
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
             })
-            if(endGameTable.isGameEndReached()) {
-                await TableManager.deleteJsonFile(endGameTable)
-                this.WSResponse({table: ''}, wss)
-                return endGameTable
-            }
+            this.WSResponse({table: endGameTable}, wss)
 
             setTimeout(async() => {
+
+                // ゲーム終了
+                if(endGameTable.isGameEndReached()) {
+                    await TableManager.deleteJsonFile(endGameTable)
+                    this.WSResponse({table: ''}, wss)
+                    return endGameTable
+                }
                 const tableJson = tablesJson[endGameTable.id]
                 const table = TableBase.createTable(tableJson)
                 const nextTable = table.next()
                 await TableManager.writeJsonFile(nextTable)
                 this.WSResponse({table: nextTable}, wss)
-            }, 5000)
+            }, this.timeout)
             return endGameTable
         }
+
+        // 次のターン
         const drawCardTable = discardedTable.drawCard()
         await TableManager.writeJsonFile(drawCardTable)
         this.setTimer(drawCardTable, wss)
