@@ -13,18 +13,30 @@ import * as WebSocket from 'ws';
 class TableController extends Controller {
 
     private timers = new Map()
-    private timeout = 8000
+    private timeout = 6000
+    private endGameTimers = new Map()
+    private endGameTimeout = 20000
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: { [key: string]: string } = {id: ''}) {
+
         const tablesJson = await TableManager.readJsonFile()
         if(TableManager.tableNotExists(params.id, tablesJson) || !session.hasTableId() || !TableManager.isPlaying(session, tablesJson)) {
             return server.redirect(res, '/')
         }
-
+        const tableJson = tablesJson[params.id]
+        const table = TableBase.createTable(tableJson)
+        if(table.isGameEndReached()) {
+            const endGameTimer = this.endGameTimers.get(table.id)
+            if(!endGameTimer) {
+                await TableManager.deleteJsonFile(table)
+                return server.redirect(res, '/')
+            }
+        }
         return super.httpResponse(res, 'table.html')
     }
 
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
+
         const {maxPlayers, maxRounds, maxGames} = await super.getBody(req) as Table
         const tablesJson = await TableManager.readJsonFile()
         if(session.hasTableId() && !TableManager.tableNotExists(session.tableId, tablesJson) && TableManager.isPlaying(session, tablesJson)) {
@@ -49,14 +61,15 @@ class TableController extends Controller {
     }
 
     async joinPlayer(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: {[key: string]: string} = {id: ''}) {
-        const tablesJson = await TableManager.readJsonFile()
-        if(session.hasTableId() && await TableManager.isPlaying(session, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        if(TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
+        const tablesJson = await TableManager.readJsonFile()
+        if(session.hasTableId() && TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         const player = new Player(session.data.id, session.data.name)
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
-        if(table.isMaxPlayersReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        console.log(table.isMaxPlayersReached())
+        console.log(table.isGameEndReached())
+        if(table.isMaxPlayersReached() || table.isGameEndReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         let addedPlayerTable = table.addPlayer(player)
         const wssTable = server.getWSConnections(table.getPlayerIds())
@@ -79,6 +92,7 @@ class TableController extends Controller {
     }
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: {[key: string]: string} = {id: ''}) {
+
         const tablesJson = await TableManager.readJsonFile()
         if(TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         const tableJson = tablesJson[params.id]
@@ -112,13 +126,14 @@ class TableController extends Controller {
     }
 
     async exit(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: {[key: string]: string} = {id: ''}) {
+
         const tablesJson = await TableManager.readJsonFile()
         if(TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400); // 自分が所属しているテーブルかどうか
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
         // ゲームが既に始まっている場合
-        if(table.isMaxPlayersReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(table.isMaxPlayersReached() && !table.isGameEndReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(table.otherPlayersNotExist()) {
             await TableManager.deleteJsonFile(table)
         } else {
@@ -145,42 +160,56 @@ class TableController extends Controller {
         if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
-        const nextTable = table.next()
-        await TableManager.writeJsonFile(nextTable)
+        const nextGameStartTable = table.prepareNextGame().handOverCards().drawCard()
+        await TableManager.writeJsonFile(nextGameStartTable)
 
         const _wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
-        super.WSResponse({table: nextTable}, _wss)
-        return super.jsonResponse(res, nextTable)
+        super.WSResponse({table: nextGameStartTable}, _wss)
+        return super.jsonResponse(res, nextGameStartTable)
     }
 
     protected async discardAndDraw(table: TableBase, card: CardBase) {
-        const time = this.timers.get(table.getPlayerInTurn().id)
-        if(time) clearTimeout(time.timer)
+
+        const playerInTurnId = table.getPlayerInTurn().id
+        const time = this.timers.get(playerInTurnId);
+        if(time) {
+            clearTimeout(time.timer)
+            this.timers.delete(playerInTurnId)
+        }
         const discardedTable = table.discard(card)
 
         const wss = server.getWSConnections(discardedTable.getPlayerIds())
         // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
-            const endGameTable = discardedTable.determineWinner().endGame()
+            const endGameTable = discardedTable.endGame()
             const tablesJson = await TableManager.writeJsonFile(endGameTable)
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
             })
             this.WSResponse({table: endGameTable}, wss)
 
-            setTimeout(async() => {
-
-                // ゲーム終了
-                if(endGameTable.isGameEndReached()) {
-                    await TableManager.deleteJsonFile(endGameTable)
+            // ゲーム終了
+            if(endGameTable.isGameEndReached()) {
+                const endGameTimer = setTimeout(async() => {
+                    const tablesJson = await TableManager.deleteJsonFile(endGameTable)
+                    const tables = TableManager.toTables(tablesJson)
                     this.WSResponse({table: ''}, wss)
-                    return endGameTable
-                }
+                    this.endGameTimers.delete(endGameTable.id)
+                    const wssHome = server.getWSAllConnections()
+                    super.WSResponse({tables: tables}, wssHome)
+                }, this.endGameTimeout)
+                this.endGameTimers.set(endGameTable.id, endGameTimer)
+                return endGameTable
+            }
+            // TODO　まだ試していない
+            setTimeout(async() => {
                 const tableJson = tablesJson[endGameTable.id]
                 const table = TableBase.createTable(tableJson)
-                const nextTable = table.next()
-                await TableManager.writeJsonFile(nextTable)
-                this.WSResponse({table: nextTable}, wss)
+                const preparedTable = table.prepareNextGame()
+
+                const nextGameStartTable = preparedTable.handOverCards().drawCard()
+                await TableManager.writeJsonFile(nextGameStartTable)
+                this.WSResponse({table: nextGameStartTable}, wss)
             }, this.timeout)
             return endGameTable
         }
@@ -193,6 +222,7 @@ class TableController extends Controller {
     }
 
     protected setTimer(table: TableBase, wss: (WebSocket.WebSocket | undefined)[]) {
+
         const playerInTurn = table.getPlayerInTurn()
         const start = Date.now(); // タイマー開始時刻を記録
         const timer = setTimeout(() => {

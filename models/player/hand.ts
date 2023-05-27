@@ -5,6 +5,7 @@ import { Ranking } from "./ranking";
 class Hand {
 
     readonly cards: CardBase[]
+    readonly maxCards = 6;
     readonly ranking: Ranking
 
     constructor(cards: CardBase[] = [], ranking: Ranking = new Ranking(0, 0)) {
@@ -27,10 +28,15 @@ class Hand {
         return this.cards[this.cards.length - 1]
     }
 
+    getRankName(lang: string) {
+        return this.ranking.getRankName(lang)
+    }
+
     analyzeHand() {
+        let bestHand = new Ranking(0, 0);
+        if(this.hasNoCard()) return new Hand(this.cards, bestHand);
         const hands = this.generateHands();
 
-        let bestHand = new Ranking(0, 0);
         for (const hand of hands) {
             const sortedCards = hand.sortedCards;
             const uniqueNumbers = new Set(sortedCards.map(card => card.number));
@@ -56,8 +62,10 @@ class Hand {
     }
 
     protected generateHands(): Hand[] {
-        const jokers = this.cards.filter(card => card.type === 4);
-        const nonJokers = this.cards.filter(card => card.type !== 4);
+        const cards = this.cards.slice()
+        if(this.isDrawnCard()) cards.pop();
+        const jokers = cards.filter(card => card.type === 4);
+        const nonJokers = cards.filter(card => card.type !== 4);
         let hands: Hand[] = [new Hand(nonJokers)];
 
         for (let joker of jokers) {
@@ -113,6 +121,18 @@ class Hand {
 
     get sortedCards() {
         return this.cards.sort((a, b) => b.number - a.number)
+    }
+
+    isCorrectNumberCards() {
+        return this.cards.length == this.maxCards - 1;
+    }
+
+    hasNoCard() {
+        return this.cards.length == 0;
+    }
+
+    isDrawnCard() {
+        return this.cards.length == this.maxCards;
     }
 
     convertToJson() {

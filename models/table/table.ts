@@ -1,5 +1,5 @@
 import { Model } from "../utils";
-import { CardBase, RegularCard, JorkerCard, CardAggregate } from '../card'
+import { CardBase, CardAggregate } from '../card'
 import { Player, PlayerAggregate } from '../player';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,13 +39,15 @@ class TableBase implements Model {
         return handedOverTable.drawCard()
     }
 
-    next() {
+    prepareNextGame() {
         const newPlayerAggregate = this.playerAggregate.discardAll()
         const newCardAggregate = CardAggregate.createNewCards()
         const resetTable = new TableBase(newCardAggregate, newPlayerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game)
-        const shuffledCardsTable = resetTable.shuffleCards()
-        const handedOverTable = shuffledCardsTable.handOverCards();
-        return handedOverTable.drawCard();
+        return resetTable.shuffleCards()
+    }
+
+    endGame() {
+        return new TableBase(this.cardAggregate, this.playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game + 1);
     }
 
     shuffleCards() {
@@ -88,25 +90,25 @@ class TableBase implements Model {
         return this.round;
     }
 
-    endGame() {
-        return new TableBase(this.cardAggregate, this.playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game + 1, this.round, this.turn);
-    }
-
-    determineWinner() {
-        const playerAggregate = this.playerAggregate.determineWinner()
-        playerAggregate.players.forEach((player) => {
-            player.hand.ranking.output()
-        })
-        return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game, this.round, this.turn);
-    }
+    // determineWinner() {
+    //     const playerAggregate = this.playerAggregate.determineWinner()
+    //     playerAggregate.players.forEach((player) => {
+    //         console.log(player.hand.ranking.getRankName('jp'))
+    //     })
+    //     return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game, this.round, this.turn);
+    // }
 
     leaveTable(id: number) {
         const playerAggregate = this.playerAggregate.leaveTable(id)
-        return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id)
+        return new TableBase(this.cardAggregate, playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game)
     }
 
     getPlayerInTurn(): Player {
         return this.playerAggregate.getPlayerInTurn(this.turn)
+    }
+
+    getWinner(): Player {
+        return this.playerAggregate.getWinner()
     }
 
     isMaxPlayersReached() {
@@ -119,6 +121,14 @@ class TableBase implements Model {
 
     isGameEndReached() {
         return this.maxGames == this.game;
+    }
+
+    isAfterGameEnd() {
+        return this.playerAggregate.isAfterGameEnd() && this.round == 0 && this.turn == 0;
+    }
+
+    isBeforeNextGameStart() {
+        return this.playerAggregate.isBeforeNextGameStart()
     }
 
     otherPlayersNotExist() {

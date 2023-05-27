@@ -34,6 +34,26 @@ class Player implements Model {
         return this.hand.getDrawnCard()
     }
 
+    getRankName(lang: string) {
+        return this.hand.getRankName(lang)
+    }
+
+    isWaiting() {
+        return this.hand.isCorrectNumberCards();
+    }
+
+    hasNoCard() {
+        return this.hand.hasNoCard()
+    }
+
+    isInTurn() {
+        return this.hand.isDrawnCard()
+    }
+
+    getRank() {
+        return this.hand.ranking
+    }
+
     convertToJson() {
         return {
             id: this.id,

@@ -71,27 +71,22 @@ class PlayerAggregate {
         return new PlayerAggregate(newPlayers);
     }
 
-    determineWinner(): PlayerAggregate {
-        const players = this.players.map((player) => player.analyzeHand())
-        return new PlayerAggregate(players);
-    }
-
     leaveTable(id: number) {
         const players = this.players.slice();
         const newPlayers = players.filter(player => player.id != id)
         return new PlayerAggregate(newPlayers)
     }
 
-    protected compareHands() {
-        const newPlayers = this.players.slice().sort((a, b) => {
-            if (a.hand.ranking.rank !== b.hand.ranking.rank) return b.hand.ranking.rank - a.hand.ranking.rank;
-            return b.hand.ranking.highCard - a.hand.ranking.highCard;
-        })
-        return new PlayerAggregate(newPlayers);
-    }
-
     hasCompletedFullRound(turn: number) {
         return turn >= this.players.length;
+    }
+
+    isAfterGameEnd() {
+        return this.players.every((player) => player.isWaiting());
+    }
+
+    isBeforeNextGameStart() {
+        return this.players.every((player) => player.hasNoCard());
     }
 
     otherPlayersNotExist() {
@@ -104,6 +99,31 @@ class PlayerAggregate {
 
     getPlayerInTurn(turn: number) {
         return this.players[turn];
+    }
+
+    getWinner() {
+        return this.players.reduce((prev, current) => {
+            const currentRank = current.analyzeHand().getRank()
+            const prevRank = prev.analyzeHand().getRank()
+            console.log(currentRank)
+            console.log(prevRank)
+            if (currentRank.rank > prevRank.rank) return current;
+            else if (currentRank.rank === prevRank.rank) return currentRank.highCard > prevRank.highCard ? current : prev;
+            return prev;
+        });
+    }
+
+    protected compareHands() {
+        const newPlayers = this.players.slice().sort((a, b) => {
+            if (a.hand.ranking.rank !== b.hand.ranking.rank) return b.hand.ranking.rank - a.hand.ranking.rank;
+            return b.hand.ranking.highCard - a.hand.ranking.highCard;
+        })
+        return new PlayerAggregate(newPlayers);
+    }
+
+    determineWinner(): PlayerAggregate {
+        const players = this.players.map((player) => player.analyzeHand())
+        return new PlayerAggregate(players);
     }
 
     convertToJson() {

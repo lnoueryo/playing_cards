@@ -5,6 +5,8 @@
         <img style="width: 100%" :src="getImgPath(card)" alt="">
       </div>
       <div class="host" style="width: 32px;height: 32px;background-color: cadetblue;border-radius: 50%;" v-if="player.id == table.playerAggregate.players[0].id"></div>
+      <div class="player-result" v-if="table.isAfterGameEnd() && table.getWinner().id == player.id">winner</div>
+      <div class="player-rank" v-if="table.isMaxPlayersReached() && (table.isAfterGameEnd() || user.id == player.id)">{{ player.analyzeHand().getRankName('jp') }}</div>
       <div class="player-name">{{ player.name }}</div>
     </div>
     <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);text-align: center;">
@@ -15,9 +17,9 @@
           </div>
         </div>
         <div style="position: relative;z-index: 2;background-color: #ffffffbf">
-          <div v-if="table.maxPlayers == table.playerAggregate.players.length">
+          <div v-if="table.isMaxPlayersReached() && !table.isGameEndReached()">
             <div>{{ showGame }}</div>
-            <div>{{ showRound }}</div>
+            <div v-if="!table.isAfterGameEnd()">{{ showRound }}</div>
             <div v-if="time < 11">{{ time }}</div>
           </div>
           <div v-else>
@@ -32,6 +34,7 @@
 import axios from 'axios';
 import { onMounted, onUnmounted,computed, reactive, ref } from 'vue'
 import {handleAsync, WebsocketConnector } from '../utils'
+import { TableBase } from '../../../models/table/table'
 
 const containerHeight = ref(`${window.innerHeight - 30}px`)
 
@@ -109,7 +112,7 @@ const getImgPath = (card) => {
 const fetchTable = async() => {
   const res = await axios.get('/api/table/' + user.value.tableId);
   console.debug(res.data)
-  table.value = res.data.table
+  table.value = TableBase.createTable(res.data.table)
   if(user.value.id in res.data) setCountDown(res.data)
 }
 
@@ -131,7 +134,6 @@ const discard = async(player, card) => {
   if(player.id != user.value.id || player.hand.cards.length != 6) return;
   resetTimer()
   const res = await axios.post('/api/table/' + user.value.tableId + '/next', card);
-  console.debug(res)
 }
 
 const leaveTable = async(player, card) => {
@@ -167,7 +169,7 @@ const websocketHandler = (e) => {
   // テーブルのデータ
   if('table' in dataJson) {
     if(!dataJson.table) return location.href = '/'
-    table.value = dataJson.table
+    table.value = TableBase.createTable(dataJson.table)
   }
   // ユーザー特有の処理
   if(user.value.id in dataJson) setCountDown(dataJson)
@@ -202,6 +204,17 @@ fetchUser()
   margin: 16px 4px;
   position: relative;
   max-width: 100px
+}
+
+.player-result {
+  position: absolute;
+  bottom: 100%;
+  right: 0%;
+}
+
+.player-rank {
+  position: absolute;
+  bottom: 100%;
 }
 
 .player-name {

@@ -1,4 +1,4 @@
-import fs from 'fs/promises';
+import * as fsPromises from 'fs/promises';
 import { TableBase, Table } from "./table";
 import path from 'path';
 import { Session } from '../../modules/auth/session';
@@ -11,7 +11,7 @@ class TableManager {
     // JSONファイルの読み取り
     static async readJsonFile(): Promise<{[key: string]: Table}> {
         try {
-            const data = await fs.readFile(TableManager.filePath, 'utf8');
+            const data = await fsPromises.readFile(TableManager.filePath, 'utf8');
             return JSON.parse(data) as {[key: string]: Table}
         } catch (err) {
             console.error(`Error reading file from disk: ${err}`);
@@ -24,7 +24,7 @@ class TableManager {
         try {
             const tablesJson = await TableManager.readJsonFile()
             tablesJson[table.id] = table.convertToJson()
-            await fs.writeFile(TableManager.filePath, JSON.stringify(tablesJson, null, 2), 'utf8');
+            await fsPromises.writeFile(TableManager.filePath, JSON.stringify(tablesJson, null, 2), 'utf8');
             return tablesJson
         } catch (err) {
             console.error(`Error writing file on disk: ${err}`);
@@ -37,7 +37,7 @@ class TableManager {
         try {
             const tablesJson = await TableManager.readJsonFile()
             delete tablesJson[table.id]
-            await fs.writeFile(TableManager.filePath, JSON.stringify(tablesJson, null, 2), 'utf8');
+            await fsPromises.writeFile(TableManager.filePath, JSON.stringify(tablesJson, null, 2), 'utf8');
             return tablesJson
         } catch (err) {
             console.error(`Error writing file on disk: ${err}`);
@@ -52,7 +52,7 @@ class TableManager {
 
     // JSONファイルの読み取り
     static isPlaying(session: Session, tablesJson: {[key: string]: Table})  {
-        return tablesJson[session.tableId].playerAggregate.players.some((player) => player.id == session.id)
+        return session.tableId in tablesJson && tablesJson[session.tableId].playerAggregate.players.some((player) => player.id == session.id)
     }
 
     static toTables(tableJson: {[key: string]: Table}): TableBase[] {

@@ -73,23 +73,23 @@ class Server {
     const httpsServer = https.createServer(options, (req: http.IncomingMessage, res: http.ServerResponse) => {
       this.routingHandler(req, res)
     });
-    const httpServer = http.createServer((req, res) => {
-      console.log(req.headers['host'])
-      let host = req.headers['host'] as string;
-      if (host.includes(':3000')) {
-          host = host.replace(':3000', ':3443');
-      }
-      res.writeHead(301, { "Location": "https://" + host + req.url });
-      res.end();
-    });
+    // const httpServer = http.createServer((req, res) => {
+    //   console.log(req.headers['host'])
+    //   let host = req.headers['host'] as string;
+    //   if (host.includes(':3000')) {
+    //       host = host.replace(':3000', ':3443');
+    //   }
+    //   res.writeHead(301, { "Location": "https://" + host + req.url });
+    //   res.end();
+    // });
     this.createWebsocketServer(httpsServer)
     // this.createWebsocketServer(httpServer)
     httpsServer.listen(this.httpsPort, () => {
       console.log(`HTTPS server is running on port ${this.httpsPort}`);
     });
-    httpServer.listen(this.httpPort, () => {
-      console.log(`HTTP server is running on port ${this.httpPort}`);
-    });
+    // httpServer.listen(this.httpPort, () => {
+    //   console.log(`HTTP server is running on port ${this.httpPort}`);
+    // });
   }
 
   routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -125,24 +125,21 @@ class Server {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Error: Not Found');
   }
-
   createWebsocketServer(server: https.Server | http.Server) {
     // WebSocketサーバーの作成
     const wss = new WebSocket.Server({ server });
 
-    // connectionイベントのリスナーを設定します。
     wss.on('connection', (ws) => {
       ws.on('message', (id: number) => {
         console.log(`Received: ${id}`);
         this.clients.set(Number(id), ws);
-        // Broadcast message to all connected clients
-        // wss.clients.forEach((client) => {
-        //   if (client.readyState === WebSocket.OPEN) {
-        //     client.send(`Broadcast: ${id}`);
-        //   }
-        // });
+        (ws as any).clientId = Number(id);
       });
-
+      ws.on('close', () => {
+        console.log('Connection closed');
+        const clientId = (ws as any).clientId;
+        this.clients.delete(clientId);
+      });
       ws.send(JSON.stringify({message: 'connect!'}));
     });
   }
