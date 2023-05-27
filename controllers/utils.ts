@@ -1,7 +1,6 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import * as bcrypt from 'bcrypt';
 import { Model } from '../models/utils';
 import * as WebSocket from 'ws';
 
@@ -74,23 +73,6 @@ class Controller {
                 reject(error);
             });
         });
-    }
-
-    protected getLoginData(): any[] {
-        const rawData = fs.readFileSync(path.join(__dirname, '..', 'storage/login.json'), 'utf-8');
-        return JSON.parse(rawData);
-    }
-
-    async hashPassword(password: string): Promise<string> {
-        const saltRounds = 10; // ハッシュ化のコストパラメーター
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        return hashedPassword;
-    }
-
-    protected async comparePassword(password: string, passwordHash: string): Promise<boolean> {
-        console.log(passwordHash)
-        return await bcrypt.compare(password, passwordHash);
     }
 
 }

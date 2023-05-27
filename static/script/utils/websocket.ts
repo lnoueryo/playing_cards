@@ -6,9 +6,10 @@ class WebsocketConnector {
     private connection: WebSocket = null;
     private reconnectInterval: NodeJS.Timer | null;
 
-    constructor(id: number, handler: (e: MessageEvent<any>) => void, url: string = `ws://${location.host}`) {
+    constructor(id: number, handler: (e: MessageEvent<any>) => void, url: string = `wss://${location.host}`) {
         this.id = id;
         this.handler = handler
+        if(location.protocol == 'http:') url = url.replace('wss:', 'ws:')
         this.url = url;
         this.reconnectInterval = null;
     }

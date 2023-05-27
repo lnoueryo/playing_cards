@@ -1,4 +1,7 @@
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import * as bcrypt from 'bcrypt';
 import { Controller } from "./utils";
 import { SessionManager } from '../modules/auth';
 import { Session, User } from '../modules/auth/session';
@@ -25,11 +28,11 @@ class LoginController extends Controller {
             const { email, password } = await super.getBody(req) as User;
 
             // ログイン情報をJSONファイルから取得
-            const loginData = super.getLoginData();
+            const loginData = this.getLoginData();
 
             // ログイン情報の検証
             const user = loginData.find((user) => user.email === email);
-            if (user && await super.comparePassword(password, user.password)) {
+            if (user && await this.comparePassword(password, user.password)) {
                 // ログイン成功
                 const session = SessionManager.createSession(user)
                 SessionManager.writeSessions(session)
@@ -61,6 +64,23 @@ class LoginController extends Controller {
             return super.jsonResponse(res, response);
         }
     }
+
+    protected getLoginData(): any[] {
+        const rawData = fs.readFileSync(path.join(__dirname, '..', 'storage/login.json'), 'utf-8');
+        return JSON.parse(rawData);
+    }
+
+    async hashPassword(password: string): Promise<string> {
+        const saltRounds = 10; // ハッシュ化のコストパラメーター
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        return hashedPassword;
+    }
+
+    protected async comparePassword(password: string, passwordHash: string): Promise<boolean> {
+        return await bcrypt.compare(password, passwordHash);
+    }
+
 }
 
 export { LoginController }

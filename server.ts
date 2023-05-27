@@ -23,28 +23,28 @@ class Server {
 
     this.noAuthRequiredPaths = {
       'GET': {
-        '/login': loginController.index,
+        '/login': loginController.index.bind(loginController),
       },
       'POST': {
-        '/api/login': loginController.login,
+        '/api/login': loginController.login.bind(loginController),
       }
     }
 
     this.routeHandlers = {
       'GET': {
-        '/': homeController.index,
-        '/table/:id': tableController.index,
-        '/api/table': homeController.tables,
-        '/api/table/:id': tableController.show,
-        '/api/user': loginController.user,
+        '/': homeController.index.bind(homeController),
+        '/table/:id': tableController.index.bind(tableController),
+        '/api/table': homeController.tables.bind(homeController),
+        '/api/table/:id': tableController.show.bind(tableController),
+        '/api/user': loginController.user.bind(loginController),
       },
       'POST': {
-        '/api/logout': loginController.logout,
-        '/api/table/create': homeController.create,
-        '/api/table/:id/join': homeController.joinPlayer,
-        '/api/table/:id/reset': tableController.reset,
-        '/api/table/:id/next': tableController.next,
-        '/api/table/:id/exit': tableController.exit,
+        '/api/logout': loginController.logout.bind(loginController),
+        '/api/table/create': homeController.create.bind(homeController),
+        '/api/table/:id/join': homeController.joinPlayer.bind(homeController),
+        '/api/table/:id/reset': tableController.reset.bind(tableController),
+        '/api/table/:id/next': tableController.next.bind(tableController),
+        '/api/table/:id/exit': tableController.exit.bind(tableController),
       }
     };
   }
@@ -143,7 +143,7 @@ class Server {
         // });
       });
 
-      ws.send('connect!');
+      ws.send(JSON.stringify({message: 'connect!'}));
     });
   }
 
