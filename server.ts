@@ -63,6 +63,36 @@ class Server {
     });
   };
 
+  startHTTPSServer() {
+    const privateKey = fs.readFileSync('./certs/rsa.pem');
+    const certificate = fs.readFileSync('./certs/cert.pem');
+    const options: https.ServerOptions = {
+      key: privateKey,
+      cert: certificate
+    };
+    const httpsServer = https.createServer(options, (req: http.IncomingMessage, res: http.ServerResponse) => {
+      this.routingHandler(req, res)
+    });
+
+    this.createWebsocketServer(httpsServer)
+    // this.createWebsocketServer(httpServer)
+    httpsServer.listen(this.httpsPort, () => {
+      console.log(`HTTPS server is running on port ${this.httpsPort}`);
+    });
+
+  }
+
+  startHTTPServer() {
+
+    const httpServer = http.createServer((req, res) => {
+      this.routingHandler(req, res)
+    });
+    this.createWebsocketServer(httpServer)
+    httpServer.listen(this.httpPort, () => {
+      console.log(`HTTP server is running on port ${this.httpPort}`);
+    });
+  }
+
   start() {
     const privateKey = fs.readFileSync('./certs/rsa.pem');
     const certificate = fs.readFileSync('./certs/cert.pem');
@@ -73,23 +103,23 @@ class Server {
     const httpsServer = https.createServer(options, (req: http.IncomingMessage, res: http.ServerResponse) => {
       this.routingHandler(req, res)
     });
-    // const httpServer = http.createServer((req, res) => {
-    //   console.log(req.headers['host'])
-    //   let host = req.headers['host'] as string;
-    //   if (host.includes(':3000')) {
-    //       host = host.replace(':3000', ':3443');
-    //   }
-    //   res.writeHead(301, { "Location": "https://" + host + req.url });
-    //   res.end();
-    // });
+    const httpServer = http.createServer((req, res) => {
+      console.log(req.headers['host'])
+      let host = req.headers['host'] as string;
+      if (host.includes(':3000')) {
+          host = host.replace(':3000', ':3443');
+      }
+      res.writeHead(301, { "Location": "https://" + host + req.url });
+      res.end();
+    });
     this.createWebsocketServer(httpsServer)
     // this.createWebsocketServer(httpServer)
     httpsServer.listen(this.httpsPort, () => {
       console.log(`HTTPS server is running on port ${this.httpsPort}`);
     });
-    // httpServer.listen(this.httpPort, () => {
-    //   console.log(`HTTP server is running on port ${this.httpPort}`);
-    // });
+    httpServer.listen(this.httpPort, () => {
+      console.log(`HTTP server is running on port ${this.httpPort}`);
+    });
   }
 
   routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
