@@ -1,5 +1,4 @@
 import fs from 'fs';
-import https from 'https';
 import http from 'http';
 import path from 'path';
 import url from 'url';
@@ -16,7 +15,7 @@ class Server {
   private routeHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
   private clients = new Map<number, WebSocket.WebSocket>();
 
-  constructor(private httpPort: number, private httpsPort: number) {
+  constructor(private httpPort: number) {
     const tableController = new TableController()
     const homeController = new HomeController()
     const loginController = new LoginController()
@@ -63,24 +62,7 @@ class Server {
     });
   };
 
-  startHTTPSServer() {
-    const privateKey = fs.readFileSync('./certs/rsa.pem');
-    const certificate = fs.readFileSync('./certs/cert.pem');
-    const options: https.ServerOptions = {
-      key: privateKey,
-      cert: certificate
-    };
-    const httpsServer = https.createServer(options, (req: http.IncomingMessage, res: http.ServerResponse) => {
-      this.routingHandler(req, res)
-    });
 
-    this.createWebsocketServer(httpsServer)
-    // this.createWebsocketServer(httpServer)
-    httpsServer.listen(this.httpsPort, () => {
-      console.log(`HTTPS server is running on port ${this.httpsPort}`);
-    });
-
-  }
 
   startHTTPServer() {
 
@@ -94,15 +76,7 @@ class Server {
   }
 
   start() {
-    const privateKey = fs.readFileSync('./certs/rsa.pem');
-    const certificate = fs.readFileSync('./certs/cert.pem');
-    const options: https.ServerOptions = {
-      key: privateKey,
-      cert: certificate
-    };
-    const httpsServer = https.createServer(options, (req: http.IncomingMessage, res: http.ServerResponse) => {
-      this.routingHandler(req, res)
-    });
+
     const httpServer = http.createServer((req, res) => {
       console.log(req.headers['host'])
       let host = req.headers['host'] as string;
@@ -112,11 +86,7 @@ class Server {
       res.writeHead(301, { "Location": "https://" + host + req.url });
       res.end();
     });
-    this.createWebsocketServer(httpsServer)
-    // this.createWebsocketServer(httpServer)
-    httpsServer.listen(this.httpsPort, () => {
-      console.log(`HTTPS server is running on port ${this.httpsPort}`);
-    });
+    this.createWebsocketServer(httpServer)
     httpServer.listen(this.httpPort, () => {
       console.log(`HTTP server is running on port ${this.httpPort}`);
     });
@@ -133,10 +103,10 @@ class Server {
     if (req.method && pathname in this.noAuthRequiredPaths[req.method]) {
       const session = SessionManager.authorize(req);
       if (session) return this.backToPreviousPage(req, res);
-      console.log(`Received request: ${req.method} ${req.url} ${req.socket.remoteAddress}`);
+      this.routingLog(req)
       return this.noAuthRequiredPaths[req.method][pathname](req, res);
     }
-
+    
     // 認証
     const session = SessionManager.authorize(req);
     if (!session) return this.redirect(res, '/login');
@@ -146,7 +116,7 @@ class Server {
       for (const pattern in this.routeHandlers[req.method]) {
         const params = this.matchPath(pattern, pathname);
         if (params) {
-          console.log(`Received request: ${req.method} ${req.url} ${req.socket.remoteAddress}`);
+          this.routingLog(req)
           return this.routeHandlers[req.method][pattern](req, res, session, params);
         }
       }
@@ -155,7 +125,7 @@ class Server {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Error: Not Found');
   }
-  createWebsocketServer(server: https.Server | http.Server) {
+  createWebsocketServer(server: http.Server) {
     // WebSocketサーバーの作成
     const wss = new WebSocket.Server({ server });
 
@@ -216,6 +186,10 @@ class Server {
     const refererUrl = url.parse(referer || '', true);
     const refererPathname = refererUrl.pathname || '/';
     return this.redirect(res, refererPathname);
+  }
+
+  routingLog(req: http.IncomingMessage) {
+    console.log(`Received request: ${req.method} ${req.url} ${req.headers['x-forwarded-for'] || req.socket.remoteAddress}`);
   }
 }
 

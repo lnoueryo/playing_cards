@@ -1,11 +1,9 @@
 import { Server } from './server'
 require('dotenv').config();
 
-const httpPort = 3000;
-const httpsPort = 3443;
-const server = new Server(httpPort, httpsPort);
-if(process.env.MODE == 'development') server.startHTTPServer();
-else server.startHTTPSServer()
-
+const httpPort = 3500;
+const httpsPort = 3500;
+const server = new Server(httpPort);
+server.startHTTPServer();
 
 export { server }
