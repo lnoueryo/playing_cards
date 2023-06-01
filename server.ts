@@ -67,9 +67,19 @@ class Server {
   startHTTPServer() {
 
     const httpServer = http.createServer((req, res) => {
-      this.routingHandler(req, res)
+      const start = Date.now();
+      try {
+        this.routingHandler(req, res)
+        this.createWebsocketServer(httpServer)
+      } catch (error) {
+        console.log(error)
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Error: Not Found');
+      }
+      res.on('finish', () => {
+        this.routingLog(req, res, start)
+      });
     });
-    this.createWebsocketServer(httpServer)
     httpServer.listen(this.httpPort, () => {
       console.log(`HTTP server is running on port ${this.httpPort}`);
     });
@@ -103,7 +113,6 @@ class Server {
     if (req.method && pathname in this.noAuthRequiredPaths[req.method]) {
       const session = SessionManager.authorize(req);
       if (session) return this.backToPreviousPage(req, res);
-      this.routingLog(req)
       return this.noAuthRequiredPaths[req.method][pathname](req, res);
     }
     
@@ -115,10 +124,7 @@ class Server {
     if (req.method) {
       for (const pattern in this.routeHandlers[req.method]) {
         const params = this.matchPath(pattern, pathname);
-        if (params) {
-          this.routingLog(req)
-          return this.routeHandlers[req.method][pattern](req, res, session, params);
-        }
+        if (params) return this.routeHandlers[req.method][pattern](req, res, session, params);
       }
     }
 
@@ -126,20 +132,29 @@ class Server {
     res.end('Error: Not Found');
   }
   createWebsocketServer(server: http.Server) {
-    // WebSocketサーバーの作成
     const wss = new WebSocket.Server({ server });
 
     wss.on('connection', (ws) => {
       ws.on('message', (id: number) => {
         console.log(`Received: ${id}`);
+        
+        // Check if the client is already connected
+        // if (this.clients.has(Number(id))) {
+        //   console.log(`Client with id ${id} is already connected. Closing the new connection.`);
+        //   ws.close();  // Close the new connection
+        //   return;
+        // }
+    
         this.clients.set(Number(id), ws);
         (ws as any).clientId = Number(id);
       });
+    
       ws.on('close', () => {
         console.log('Connection closed');
         const clientId = (ws as any).clientId;
         this.clients.delete(clientId);
       });
+    
       ws.send(JSON.stringify({message: 'connect!'}));
     });
   }
@@ -188,8 +203,10 @@ class Server {
     return this.redirect(res, refererPathname);
   }
 
-  routingLog(req: http.IncomingMessage) {
-    console.log(`Received request: ${req.method} ${req.url} ${req.headers['x-forwarded-for'] || req.socket.remoteAddress}`);
+  routingLog(req: http.IncomingMessage, res: http.ServerResponse, start: number) {
+    const duration = Date.now() - start;
+    console.log(`${new Date().toISOString()} - Received request: ${req.method} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer} - Status: ${res.statusCode} - Response Time: ${duration}ms`);
+
   }
 }
 
