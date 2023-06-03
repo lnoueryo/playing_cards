@@ -30,7 +30,7 @@ class Player implements Model {
     }
 
     getDrawnCard() {
-        if(this.hand.cards.length != 6) throw(`the player in turn doesn't have correct number of cards: ${this.hand.cards.length}`)
+        if(this.hand.cards.length != 6) throw new Error(`the player in turn doesn't have correct number of cards: ${this.hand.cards.length}`)
         return this.hand.getDrawnCard()
     }
 
