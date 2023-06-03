@@ -1,12 +1,11 @@
 import http from 'http';
 import { TableBase, TableManager } from "../models/table";
 import { Controller } from "./utils";
-import { Session } from '../modules/auth/session';
+import { Session } from '../modules/auth';
 import { server } from '../main';
 import { Card, CardAggregate, CardBase } from '../models/card';
 import { Player, PlayerAggregate } from '../models/player';
 import { Table } from '../models/table/table';
-import { SessionManager } from '../modules/auth';
 import * as WebSocket from 'ws';
 
 
@@ -43,7 +42,7 @@ class TableController extends Controller {
             return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         }
         const tables = TableManager.toTables(tablesJson)
-        const player = new Player(session.id, session.name)
+        const player = new Player(session.userId, session.userName)
         const playerAggregate = new PlayerAggregate()
         const newPlayerAggregate = playerAggregate.addPlayer(player)
         const cardAggregate = CardAggregate.createNewCards();
@@ -53,7 +52,7 @@ class TableController extends Controller {
         // テーブル追加&&テーブルidセッションに追加
         await TableManager.writeJsonFile(table)
         const newSession = session.joinTable(table.id)
-        SessionManager.writeSessions(newSession)
+        newSession.updateUser()
 
         const wss = server.getWSAllConnections()
         super.WSResponse({tables: tables}, wss)
@@ -64,7 +63,7 @@ class TableController extends Controller {
 
         const tablesJson = await TableManager.readJsonFile()
         if(session.hasTableId() && TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        const player = new Player(session.data.id, session.data.name)
+        const player = new Player(session.userId, session.userName)
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
         console.log(table.isMaxPlayersReached())
@@ -82,7 +81,7 @@ class TableController extends Controller {
         const newTablesJson = await TableManager.writeJsonFile(addedPlayerTable)
         const tables = TableManager.toTables(newTablesJson)
         const newSession = session.joinTable(addedPlayerTable.id)
-        SessionManager.writeSessions(newSession)
+        newSession.updateUser()
 
         const wssHome = server.getWSAllConnections()
         super.WSResponse({tables: tables}, wssHome)
@@ -116,7 +115,7 @@ class TableController extends Controller {
 
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
-        if(session.id != table.getPlayerInTurn().id) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(session.userId != table.getPlayerInTurn().id) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const cardJson = await super.getBody(req) as Card
         const card = CardBase.createCard(cardJson)
@@ -137,7 +136,7 @@ class TableController extends Controller {
         if(table.otherPlayersNotExist()) {
             await TableManager.deleteJsonFile(table)
         } else {
-            const newTable = table.leaveTable(session.id)
+            const newTable = table.leaveTable(session.userId)
             await TableManager.writeJsonFile(newTable)
         }
         const newTablesJson = await TableManager.readJsonFile()

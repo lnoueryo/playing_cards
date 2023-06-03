@@ -4,48 +4,25 @@ import path from 'path';
 import url from 'url';
 import * as WebSocket from 'ws';
 import { TableController, HomeController, LoginController } from './controllers'
-import { SessionManager } from './modules/auth';
+// import { SessionManager } from './modules/auth';
 import { Session } from './modules/auth/session';
+import { CookieManager } from './modules/auth/cookie_manager';
+import { routeHandlers, sessionRequiredRouteHandlers } from './routes';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
 type AuthenticatedHandler = (req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) => void;
 
 class Server {
-  private noAuthRequiredPaths: { [path: string]: {[path: string]: Handler} };
-  private routeHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
+  private routeHandlers: { [path: string]: {[path: string]: Handler} };
+  private sessionRequiredRouteHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
   private clients = new Map<number, WebSocket.WebSocket>();
+  readonly SESSION_ID_COOKIE_KEY: string;
 
   constructor(private httpPort: number) {
-    const tableController = new TableController()
-    const homeController = new HomeController()
-    const loginController = new LoginController()
-
-    this.noAuthRequiredPaths = {
-      'GET': {
-        '/login': loginController.index.bind(loginController),
-      },
-      'POST': {
-        '/api/login': loginController.login.bind(loginController),
-      }
-    }
-
-    this.routeHandlers = {
-      'GET': {
-        '/': homeController.index.bind(homeController),
-        '/table/:id': tableController.index.bind(tableController),
-        '/api/table': homeController.tables.bind(homeController),
-        '/api/table/:id': tableController.show.bind(tableController),
-        '/api/user': loginController.user.bind(loginController),
-      },
-      'POST': {
-        '/api/logout': loginController.logout.bind(loginController),
-        '/api/table/create': tableController.create.bind(tableController),
-        '/api/table/:id/join': tableController.joinPlayer.bind(tableController),
-        '/api/table/:id/reset': tableController.reset.bind(tableController),
-        '/api/table/:id/next': tableController.next.bind(tableController),
-        '/api/table/:id/exit': tableController.exit.bind(tableController),
-      }
-    };
+    if(!process.env.SESSION_ID_COOKIE_KEY) throw new Error('SESSION_ID_COOKIE_KEY is not defined on .env')
+    this.SESSION_ID_COOKIE_KEY = process.env.SESSION_ID_COOKIE_KEY
+    this.routeHandlers = routeHandlers
+    this.sessionRequiredRouteHandlers = sessionRequiredRouteHandlers;
   }
 
   private handleStaticFile(req: http.IncomingMessage, res: http.ServerResponse, pathname: string) {
@@ -62,15 +39,12 @@ class Server {
     });
   };
 
-
-
   startHTTPServer() {
 
     const httpServer = http.createServer((req, res) => {
       const start = Date.now();
       try {
         this.routingHandler(req, res)
-        this.createWebsocketServer(httpServer)
       } catch (error) {
         console.log(error)
         res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -79,22 +53,6 @@ class Server {
       res.on('finish', () => {
         this.routingLog(req, res, start)
       });
-    });
-    httpServer.listen(this.httpPort, () => {
-      console.log(`HTTP server is running on port ${this.httpPort}`);
-    });
-  }
-
-  start() {
-
-    const httpServer = http.createServer((req, res) => {
-      console.log(req.headers['host'])
-      let host = req.headers['host'] as string;
-      if (host.includes(':3000')) {
-          host = host.replace(':3000', ':3443');
-      }
-      res.writeHead(301, { "Location": "https://" + host + req.url });
-      res.end();
     });
     this.createWebsocketServer(httpServer)
     httpServer.listen(this.httpPort, () => {
@@ -110,51 +68,75 @@ class Server {
     if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
 
     // 認証が不要なパスに対する処理
-    if (req.method && pathname in this.noAuthRequiredPaths[req.method]) {
-      const session = SessionManager.authorize(req);
-      if (session) return this.backToPreviousPage(req, res);
-      return this.noAuthRequiredPaths[req.method][pathname](req, res);
-    }
-    
-    // 認証
-    const session = SessionManager.authorize(req);
-    if (!session) return this.redirect(res, '/login');
-
-    // ルーティング
-    if (req.method) {
-      for (const pattern in this.routeHandlers[req.method]) {
-        const params = this.matchPath(pattern, pathname);
-        if (params) return this.routeHandlers[req.method][pattern](req, res, session, params);
+    const cm = new CookieManager(req, res, this.SESSION_ID_COOKIE_KEY)
+    const sessionId = cm.getSessionId()
+    if (req.method && pathname in this.routeHandlers[req.method]) {
+      try {
+        if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
+        const session = new Session(sessionId);
+        if (session.hasUser()) return this.backToPreviousPage(req, res);
+      } catch (error) {
+        console.error(error)
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('Error: Error');
       }
+    }
+
+    if(!sessionId) {
+      return this.redirect(res, '/login');
+    }
+
+    try {
+      // 認証
+      const session = new Session(sessionId);
+      if(!session.hasUser()) {
+        console.warn('No user on session');
+        cm.expireCookie()
+        return this.redirect(res, '/login');
+      }
+      // ルーティング
+      if (req.method) {
+        for (const pattern in this.sessionRequiredRouteHandlers[req.method]) {
+          const params = this.matchPath(pattern, pathname);
+          if (params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params);
+        }
+      }
+    } catch (error) {
+      console.error(error)
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      return res.end('Error: Error');
     }
 
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Error: Not Found');
+
   }
+
   createWebsocketServer(server: http.Server) {
     const wss = new WebSocket.Server({ server });
 
     wss.on('connection', (ws) => {
       ws.on('message', (id: number) => {
+        if(!id) return ws.close();
         console.log(`Received: ${id}`);
-        
         // Check if the client is already connected
         // if (this.clients.has(Number(id))) {
         //   console.log(`Client with id ${id} is already connected. Closing the new connection.`);
         //   ws.close();  // Close the new connection
         //   return;
         // }
-    
+
         this.clients.set(Number(id), ws);
         (ws as any).clientId = Number(id);
       });
-    
+
       ws.on('close', () => {
         console.log('Connection closed');
-        const clientId = (ws as any).clientId;
+        const clientId = (ws as any)?.clientId;
+        if(!clientId) return;
         this.clients.delete(clientId);
       });
-    
+
       ws.send(JSON.stringify({message: 'connect!'}));
     });
   }
@@ -165,7 +147,8 @@ class Server {
     res.end();
   }
 
-  matchPath(pattern: string, pathname: string): { [param: string]: string } | null {
+  private matchPath(pattern: string, pathname: string): { [param: string]: string } | null {
+
     const keys: string[] = [];
     pattern = pattern.replace(/:([^\/]+)/g, (_, key) => {
       keys.push(key);
