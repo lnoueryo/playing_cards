@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+import { SessionManager, SessionManagerFactory } from './session_manager';
 
 type User = {
     'id': number,
@@ -8,29 +10,50 @@ type User = {
 }
 
 class Session {
-    sessionId: string;
-    data: User;
 
-    constructor(sessionId: string, data: User) {
-        this.sessionId = sessionId;
-        this.data = data;
+    readonly manager: SessionManager
+    readonly user: User
+    constructor(readonly id: string, user?: User) {
+        this.manager = SessionManagerFactory.create()
+        this.user = user || this.getUser();
+    }
+
+    updateUser() {
+        this.manager.updateUser(this)
+    }
+
+    deleteUser() {
+        this.manager.deleteUser(this)
+    }
+
+    getUser(): User {
+        return this.manager.getUser(this)
+    }
+
+    static createSession(user: any): Session {
+        const id = uuidv4();
+        return new Session(id, user);
     }
 
     joinTable(id: string) {
-        this.data.tableId = id;
-        return new Session(this.sessionId, this.data)
+        this.user.tableId = id;
+        return new Session(this.id, this.user)
     }
 
-    get id() {
-        return this.data.id;
+    get userId() {
+        return this.user.id;
     }
 
-    get name() {
-        return this.data.name;
+    get userName() {
+        return this.user.name;
     }
 
     get tableId() {
-        return this.data.tableId;
+        return this.user?.tableId;
+    }
+
+    hasUser() {
+        return !!this.user
     }
 
     hasTableId() {
@@ -38,13 +61,15 @@ class Session {
     }
 
     deleteTableId() {
-        const data = this.data;
-        data['tableId'] = '';
-        return new Session(this.sessionId, data)
+        const data = this.user;
+        if(data && 'tableId' in data) {
+            data.tableId = '';
+        }
+        return new Session(this.id, data)
     }
 
     isNotMatchingTableId(tableId: string) {
-        return this.data.tableId != tableId;
+        return this.user.tableId != tableId;
     }
 
 }

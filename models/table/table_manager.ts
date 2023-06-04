@@ -1,7 +1,7 @@
 import * as fsPromises from 'fs/promises';
 import { TableBase, Table } from "./table";
 import path from 'path';
-import { Session } from '../../modules/auth/session';
+import { Session } from '../../modules/auth';
 
 
 class TableManager {
@@ -52,7 +52,7 @@ class TableManager {
 
     // JSONファイルの読み取り
     static isPlaying(session: Session, tablesJson: {[key: string]: Table})  {
-        return session.tableId in tablesJson && tablesJson[session.tableId].playerAggregate.players.some((player) => player.id == session.id)
+        return session.tableId in tablesJson && tablesJson[session.tableId].playerAggregate.players.some((player) => player.id == session.userId)
     }
 
     static toTables(tableJson: {[key: string]: Table}): TableBase[] {

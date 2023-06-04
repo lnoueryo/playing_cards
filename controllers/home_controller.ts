@@ -1,12 +1,8 @@
 import http from 'http';
-import { Player, PlayerAggregate } from "../models/player";
-import { TableBase, TableManager } from "../models/table";
+import { TableManager } from "../models/table";
 import { Controller } from "./utils";
-import { Session } from '../modules/auth/session';
-import { server } from '../main';
-import { SessionManager } from '../modules/auth';
-import { CardAggregate } from '../models/card';
-import { Table } from '../models/table/table';
+import { Session } from '../modules/auth';
+import { config } from '../main';
 
 
 class HomeController extends Controller {
@@ -15,9 +11,9 @@ class HomeController extends Controller {
         const tablesJson = await TableManager.readJsonFile()
         if(TableManager.tableNotExists(session.tableId, tablesJson)) {
             session = session.deleteTableId()
-            SessionManager.writeSessions(session)
+            session.updateUser()
         }
-        if(session.hasTableId() && TableManager.isPlaying(session, tablesJson)) return server.redirect(res, `/table/${session.tableId}`)
+        if(session.hasTableId() && TableManager.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.tableId}`)
         return super.httpResponse(res, 'index.html')
     }
 

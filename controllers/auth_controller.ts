@@ -3,8 +3,7 @@ import fs from 'fs';
 import path from 'path';
 const bcrypt = require('bcryptjs');
 import { Controller } from "./utils";
-import { SessionManager } from '../modules/auth';
-import { Session, User } from '../modules/auth/session';
+import { Session, User, CookieManager } from '../modules/auth';
 
 
 class LoginController extends Controller {
@@ -18,7 +17,7 @@ class LoginController extends Controller {
     }
 
     async user(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
-        const user = session.data
+        const user = session.user
         return super.jsonResponse(res, user);
     }
 
@@ -34,13 +33,16 @@ class LoginController extends Controller {
             const user = loginData.find((user) => user.email === email);
             if (user && await this.comparePassword(password, user.password)) {
                 // ログイン成功
-                const session = SessionManager.createSession(user)
-                SessionManager.writeSessions(session)
-                SessionManager.setCookie(res, session.sessionId)
+                const session = Session.createSession(user)
+                session.updateUser()
+                const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
+                cm.setSessionIdToCookie(session)
+                console.info('logged in')
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);
             } else {
               // ログイン失敗
+              console.warn('failed to log in')
               const response = { message: 'ログインに失敗しました' };
               return super.jsonResponse(res, response, 401);
             }
@@ -54,8 +56,9 @@ class LoginController extends Controller {
 
     async logout(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
         try {
-            SessionManager.deleteSession(session)
-            SessionManager.expireCookie(res)
+            session.deleteUser()
+            const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
+            cm.expireCookie()
             return super.jsonResponse(res, {});
         } catch (error) {
             // エラーハンドリング
