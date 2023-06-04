@@ -2,7 +2,7 @@ import http from 'http';
 import { TableManager } from "../models/table";
 import { Controller } from "./utils";
 import { Session } from '../modules/auth';
-import { server } from '../main';
+import { config } from '../main';
 
 
 class HomeController extends Controller {
@@ -13,7 +13,7 @@ class HomeController extends Controller {
             session = session.deleteTableId()
             session.updateUser()
         }
-        if(session.hasTableId() && TableManager.isPlaying(session, tablesJson)) return server.redirect(res, `/table/${session.tableId}`)
+        if(session.hasTableId() && TableManager.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.tableId}`)
         return super.httpResponse(res, 'index.html')
     }
 

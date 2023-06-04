@@ -2,7 +2,7 @@ import http from 'http';
 import { TableBase, TableManager } from "../models/table";
 import { Controller } from "./utils";
 import { Session } from '../modules/auth';
-import { server } from '../main';
+import { config } from '../main';
 import { Card, CardAggregate, CardBase } from '../models/card';
 import { Player, PlayerAggregate } from '../models/player';
 import { Table } from '../models/table/table';
@@ -20,7 +20,7 @@ class TableController extends Controller {
 
         const tablesJson = await TableManager.readJsonFile()
         if(TableManager.tableNotExists(params.id, tablesJson) || !session.hasTableId() || !TableManager.isPlaying(session, tablesJson)) {
-            return server.redirect(res, '/')
+            return config.server.redirect(res, '/')
         }
         const tableJson = tablesJson[params.id]
         const table = TableBase.createTable(tableJson)
@@ -28,7 +28,7 @@ class TableController extends Controller {
             const endGameTimer = this.endGameTimers.get(table.id)
             if(!endGameTimer) {
                 await TableManager.deleteJsonFile(table)
-                return server.redirect(res, '/')
+                return config.server.redirect(res, '/')
             }
         }
         return super.httpResponse(res, 'table.html')
@@ -54,7 +54,7 @@ class TableController extends Controller {
         const newSession = session.joinTable(table.id)
         newSession.updateUser()
 
-        const wss = server.getWSAllConnections()
+        const wss = config.server.getWSAllConnections()
         super.WSResponse({tables: tables}, wss)
         return super.jsonResponse(res, table)
     }
@@ -71,7 +71,7 @@ class TableController extends Controller {
         if(table.isMaxPlayersReached() || table.isGameEndReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         let addedPlayerTable = table.addPlayer(player)
-        const wssTable = server.getWSConnections(table.getPlayerIds())
+        const wssTable = config.server.getWSConnections(table.getPlayerIds())
         if(addedPlayerTable.isMaxPlayersReached()) {
             addedPlayerTable = addedPlayerTable.start()
             this.setTimer(addedPlayerTable, wssTable)
@@ -83,7 +83,7 @@ class TableController extends Controller {
         const newSession = session.joinTable(addedPlayerTable.id)
         newSession.updateUser()
 
-        const wssHome = server.getWSAllConnections()
+        const wssHome = config.server.getWSAllConnections()
         super.WSResponse({tables: tables}, wssHome)
 
         return super.jsonResponse(res, addedPlayerTable)
@@ -143,10 +143,10 @@ class TableController extends Controller {
         const tables = TableManager.toTables(newTablesJson)
         const newTableJson = newTablesJson[params.id]
 
-        const wssHome = server.getWSAllConnections()
+        const wssHome = config.server.getWSAllConnections()
         super.WSResponse({tables: tables}, wssHome)
 
-        const wssTable = server.getWSConnections(table.getPlayerIds())
+        const wssTable = config.server.getWSConnections(table.getPlayerIds())
         super.WSResponse({table: newTableJson}, wssTable)
 
         return super.jsonResponse(res, newTableJson)
@@ -162,7 +162,7 @@ class TableController extends Controller {
         const nextGameStartTable = table.prepareNextGame().handOverCards().drawCard()
         await TableManager.writeJsonFile(nextGameStartTable)
 
-        const _wss = server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
+        const _wss = config.server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
         super.WSResponse({table: nextGameStartTable}, _wss)
         return super.jsonResponse(res, nextGameStartTable)
     }
@@ -177,7 +177,7 @@ class TableController extends Controller {
         }
         const discardedTable = table.discard(card)
 
-        const wss = server.getWSConnections(discardedTable.getPlayerIds())
+        const wss = config.server.getWSConnections(discardedTable.getPlayerIds())
         // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
             const endGameTable = discardedTable.endGame()
@@ -194,7 +194,7 @@ class TableController extends Controller {
                     const tables = TableManager.toTables(tablesJson)
                     this.WSResponse({table: ''}, wss)
                     this.endGameTimers.delete(endGameTable.id)
-                    const wssHome = server.getWSAllConnections()
+                    const wssHome = config.server.getWSAllConnections()
                     super.WSResponse({tables: tables}, wssHome)
                 }, this.endGameTimeout)
                 this.endGameTimers.set(endGameTable.id, endGameTimer)
