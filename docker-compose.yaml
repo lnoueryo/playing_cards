@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  playing_cards:
+    image: playing_cards
+    container_name: playing_cards
+    build:
+      context: "."
+      dockerfile: "docker/Dockerfile"
+    ports:
+      - "3100:3100"
+    environment:
+      CHOKIDAR_USEPOLLING: true
+      NODE_OPTIONS: --max_old_space_size=8192
+    volumes:
+      - "./:/app"
+    hostname: playing_cards
+    tty: true
+    # command: npm run dev
+    networks:
+      shared_network:
+        ipv4_address: 172.16.0.10
+
+networks:
+  shared_network:
+    external: true
