@@ -34,7 +34,7 @@
 import axios from 'axios';
 import { onMounted, onUnmounted,computed, reactive, ref } from 'vue'
 import {handleAsync, WebsocketConnector } from '../utils'
-import { TableBase } from '../../../models/table/table'
+import { Table } from '../../../models/table/table'
 
 const containerHeight = ref(`${window.innerHeight - 30}px`)
 
@@ -112,7 +112,7 @@ const getImgPath = (card) => {
 const fetchTable = async() => {
   const res = await axios.get('/api/table/' + user.value.tableId);
   console.debug(res.data)
-  table.value = TableBase.createTable(res.data.table)
+  table.value = Table.createTable(res.data.table)
   if(user.value.id in res.data) setCountDown(res.data)
 }
 
@@ -169,7 +169,7 @@ const websocketHandler = (e) => {
   // テーブルのデータ
   if('table' in dataJson) {
     if(!dataJson.table) return location.href = '/'
-    table.value = TableBase.createTable(dataJson.table)
+    table.value = Table.createTable(dataJson.table)
   }
   // ユーザー特有の処理
   if(user.value.id in dataJson) setCountDown(dataJson)

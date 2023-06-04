@@ -1,4 +1,5 @@
 import { MongoClient } from "mongodb";
+import { TablesJson } from "../../models/table/table_manager/table_manager";
 
 
 class MongoDB {
@@ -10,7 +11,7 @@ class MongoDB {
         private password: string | undefined,
         private port: string | undefined,
         private database: string | undefined,
-        private collection: string,
+        private collection: string | any,
     ) {
         if(!host || !user || !port || !database || !collection) throw new Error('host or user or database is undefined')
         this.host = host
@@ -29,6 +30,7 @@ class MongoDB {
             const database = this.client.db(this.database); // Use the name of your database
             const collection = database.collection(this.collection); // Use the name of your collection
             const documents = await collection.find({}).toArray();
+            return documents
             console.log(documents);
         } catch (error) {
             console.error(error)
@@ -41,6 +43,7 @@ class MongoDB {
             const collection = database.collection(this.collection); // Use the name of your collection
             const result = await collection.findOne(query);
             console.log(`${result}`);
+            return result
         } catch (error) {
             console.error(error)
         }
@@ -52,6 +55,7 @@ class MongoDB {
             const collection = database.collection(this.collection); // Use the name of your collection
             const result = await collection.insertOne(document);
             console.log(`Document inserted with _id: ${result.insertedId}`);
+            return result
         } catch (error) {
             console.error(error)
         }
@@ -63,6 +67,7 @@ class MongoDB {
             const collection = database.collection(this.collection); // Use the name of your collection
             const result = await collection.replaceOne(query, document);
             console.log(`Document inserted with _id: ${result}`);
+            return result
 
         } catch (error) {
             console.error(error)
@@ -73,9 +78,9 @@ class MongoDB {
         try {
             const database = this.client.db(this.database); // Use the name of your database
             const collection = database.collection(this.collection); // Use the name of your collection
-            const query = { title: 'The Room' };
             const result = await collection.deleteOne(query);
             console.log(`Document inserted with _id: ${result.deletedCount}`);
+            return result
         } catch (error) {
             console.error(error)
         }
@@ -93,3 +98,6 @@ class MongoDB {
         }
     }
 }
+
+
+export { MongoDB }

@@ -27,7 +27,7 @@ class Session {
         const session = new Session(id);
         const user = await session.manager.getUser(session);
         if(user.length == 0) return new Session(id)
-        return new Session(id, user);
+        return new Session(id, user[0]);
     }
 
     async deleteUser() {

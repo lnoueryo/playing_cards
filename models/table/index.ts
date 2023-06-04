@@ -1,3 +1,3 @@
-import { TableBase } from './table'
-import { TableManager } from './table_manager'
-export { TableBase, TableManager }
+import { Table } from './table'
+import { TableManager } from './table_manager/index'
+export { Table, TableManager }

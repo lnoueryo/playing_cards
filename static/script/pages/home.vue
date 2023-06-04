@@ -13,7 +13,7 @@
 import axios from 'axios';
 import { reactive, ref } from 'vue'
 import {handleAsync, WebsocketConnector} from '../utils'
-import { TableBase } from '../../../models/table/table'
+import { Table } from '../../../models/table/table'
 
 const goToTable = (path) => {
   location.href = '/table/' + path;
@@ -27,7 +27,7 @@ const table = {
 }
 const fetchTables = async() => {
   const res = await axios.get('/api/table');
-  tables.value = res.data.map(table => TableBase.createTable(table));
+  tables.value = res.data.map(table => Table.createTable(table));
 }
 
 const createTable = async() => {
@@ -57,7 +57,7 @@ const logout = async() => {
 const websocketHandler = (e) => {
   const tablesJson = JSON.parse(e.data)
   if('tables' in tablesJson) {
-    tables.value = tablesJson.tables.map(table => TableBase.createTable(table));
+    tables.value = tablesJson.tables.map(table => Table.createTable(table));
   }
 }
 

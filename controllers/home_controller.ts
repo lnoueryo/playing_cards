@@ -1,25 +1,27 @@
 import http from 'http';
-import { TableManager } from "../models/table";
 import { Controller } from "./utils";
 import { Session } from '../modules/auth';
 import { config } from '../main';
+import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
 
 
 class HomeController extends Controller {
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
-        const tablesJson = await TableManager.readJsonFile()
-        if(TableManager.tableNotExists(session.tableId, tablesJson)) {
-            // session = session.deleteTableId()
-            // await session.updateUser()
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(session.tableId && tm.tableNotExists(session.tableId, tablesJson)) {
+            session = session.deleteTableId()
+            await session.updateUser()
         }
-        if(session.hasTableId() && TableManager.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.tableId}`)
+        if(session.hasTableId() && tm.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.tableId}`)
         return super.httpResponse(res, 'index.html')
     }
 
     async tables(req: http.IncomingMessage, res: http.ServerResponse) {
-        const tableJson = await TableManager.readJsonFile()
-        const tables = TableManager.toTables(tableJson)
+        const tm = TableManagerFactory.create()
+        const tableJson = await tm.getTablesJson()
+        const tables = tm.toTables(tableJson)
         return super.jsonResponse(res, tables)
     }
 }

@@ -9,10 +9,10 @@ interface Model {
 class ModelBase {
 
     protected table: string
-    private readonly db: Mysql
+    private readonly DB: Mysql
     constructor(table: string, private readonly columns: string[], protected query: string = '', protected whereQuery: string = '') {
         this.table = table;
-        this.db = config.db
+        this.DB = config.DB
     }
 
     _where(column: string, condition: string, whereQuery: string = '') {
@@ -33,7 +33,7 @@ class ModelBase {
     }
 
     async excute(params: any[] = []) {
-        const result = await this.db.query(this.query, params);
+        const result = await this.DB.query(this.query, params);
         this.query = '';
         this.whereQuery = '';
         return result;

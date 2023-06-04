@@ -11,7 +11,7 @@ export class DatabaseSessionManager extends SessionManager {
 
     constructor() {
         super();
-        this.connection = config.db
+        this.connection = config.DB
     }
 
     async getUser(session: Session) {

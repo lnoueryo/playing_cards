@@ -1,12 +1,13 @@
 import http from 'http';
-import { TableBase, TableManager } from "../models/table";
+import { Table, TableManager } from "../models/table";
 import { Controller } from "./utils";
 import { Session } from '../modules/auth';
 import { config } from '../main';
 import { Card, CardAggregate, CardBase } from '../models/card';
 import { Player, PlayerAggregate } from '../models/player';
-import { Table } from '../models/table/table';
+import { TableJson } from '../models/table/table';
 import * as WebSocket from 'ws';
+import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
 
 
 class TableController extends Controller {
@@ -17,17 +18,17 @@ class TableController extends Controller {
     private endGameTimeout = 20000
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: { [key: string]: string } = {id: ''}) {
-
-        const tablesJson = await TableManager.readJsonFile()
-        if(TableManager.tableNotExists(params.id, tablesJson) || !session.hasTableId() || !TableManager.isPlaying(session, tablesJson)) {
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(tm.tableNotExists(params.id, tablesJson) || !session.hasTableId() || !tm.isPlaying(session, tablesJson)) {
             return config.server.redirect(res, '/')
         }
         const tableJson = tablesJson[params.id]
-        const table = TableBase.createTable(tableJson)
+        const table = Table.createTable(tableJson)
         if(table.isGameEndReached()) {
             const endGameTimer = this.endGameTimers.get(table.id)
             if(!endGameTimer) {
-                await TableManager.deleteJsonFile(table)
+                await tm.deleteTableJson(table)
                 return config.server.redirect(res, '/')
             }
         }
@@ -37,20 +38,21 @@ class TableController extends Controller {
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
 
         const {maxPlayers, maxRounds, maxGames} = await super.getBody(req) as Table
-        const tablesJson = await TableManager.readJsonFile()
-        if(session.hasTableId() && !TableManager.tableNotExists(session.tableId, tablesJson) && TableManager.isPlaying(session, tablesJson)) {
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(session.hasTableId() && !tm.tableNotExists(session.tableId, tablesJson) && tm.isPlaying(session, tablesJson)) {
             return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         }
-        const tables = TableManager.toTables(tablesJson)
-        const player = new Player(session.userId, session.userName)
+        const tables = tm.toTables(tablesJson)
+        const player = new Player(session.user.id, session.userName)
         const playerAggregate = new PlayerAggregate()
         const newPlayerAggregate = playerAggregate.addPlayer(player)
         const cardAggregate = CardAggregate.createNewCards();
-        const table = new TableBase(cardAggregate, newPlayerAggregate, maxPlayers, maxRounds, maxGames);
+        const table = new Table(cardAggregate, newPlayerAggregate, maxPlayers, maxRounds, maxGames);
         tables.push(table)
-
+        console.log(table)
         // テーブル追加&&テーブルidセッションに追加
-        await TableManager.writeJsonFile(table)
+        await tm.createTableJson(table)
         const newSession = session.joinTable(table.id)
         newSession.updateUser()
 
@@ -60,12 +62,12 @@ class TableController extends Controller {
     }
 
     async joinPlayer(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: {[key: string]: string} = {id: ''}) {
-
-        const tablesJson = await TableManager.readJsonFile()
-        if(session.hasTableId() && TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(session.hasTableId() && tm.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         const player = new Player(session.userId, session.userName)
         const tableJson = tablesJson[params.id]
-        const table = TableBase.createTable(tableJson)
+        const table = Table.createTable(tableJson)
         console.log(table.isMaxPlayersReached())
         console.log(table.isGameEndReached())
         if(table.isMaxPlayersReached() || table.isGameEndReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
@@ -78,8 +80,8 @@ class TableController extends Controller {
         }
         super.WSResponse({table: addedPlayerTable}, wssTable)
 
-        const newTablesJson = await TableManager.writeJsonFile(addedPlayerTable)
-        const tables = TableManager.toTables(newTablesJson)
+        const newTablesJson = await tm.updateTableJson(addedPlayerTable)
+        const tables = tm.toTables(newTablesJson)
         const newSession = session.joinTable(addedPlayerTable.id)
         newSession.updateUser()
 
@@ -92,10 +94,11 @@ class TableController extends Controller {
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: {[key: string]: string} = {id: ''}) {
 
-        const tablesJson = await TableManager.readJsonFile()
-        if(TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(tm.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         const tableJson = tablesJson[params.id]
-        const table = TableBase.createTable(tableJson)
+        const table = Table.createTable(tableJson)
         const responseJson: any = {table}
 
         const playerInTurn = table.getPlayerInTurn()
@@ -109,12 +112,13 @@ class TableController extends Controller {
 
     async next(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: { [key: string]: string } = {id: ''}) {
 
-        const tablesJson = await TableManager.readJsonFile()
-        if(TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(tm.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400); // 自分が所属しているテーブルかどうか
 
         const tableJson = tablesJson[params.id]
-        const table = TableBase.createTable(tableJson)
+        const table = Table.createTable(tableJson)
         if(session.userId != table.getPlayerInTurn().id) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const cardJson = await super.getBody(req) as Card
@@ -126,21 +130,22 @@ class TableController extends Controller {
 
     async exit(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params: {[key: string]: string} = {id: ''}) {
 
-        const tablesJson = await TableManager.readJsonFile()
-        if(TableManager.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
+        if(tm.tableNotExists(params.id, tablesJson)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400); // 自分が所属しているテーブルかどうか
         const tableJson = tablesJson[params.id]
-        const table = TableBase.createTable(tableJson)
+        const table = Table.createTable(tableJson)
         // ゲームが既に始まっている場合
         if(table.isMaxPlayersReached() && !table.isGameEndReached()) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(table.otherPlayersNotExist()) {
-            await TableManager.deleteJsonFile(table)
+            await tm.deleteTableJson(table)
         } else {
             const newTable = table.leaveTable(session.userId)
-            await TableManager.writeJsonFile(newTable)
+            await tm.updateTableJson(newTable)
         }
-        const newTablesJson = await TableManager.readJsonFile()
-        const tables = TableManager.toTables(newTablesJson)
+        const newTablesJson = await tm.getTablesJson()
+        const tables = tm.toTables(newTablesJson)
         const newTableJson = newTablesJson[params.id]
 
         const wssHome = config.server.getWSAllConnections()
@@ -154,20 +159,21 @@ class TableController extends Controller {
 
     async reset(req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) {
 
-        const tablesJson = await TableManager.readJsonFile()
+        const tm = TableManagerFactory.create()
+        const tablesJson = await tm.getTablesJson()
         if(!params?.id || params.id in tablesJson == false) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         if(session.isNotMatchingTableId(params.id)) return super.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
         const tableJson = tablesJson[params.id]
-        const table = TableBase.createTable(tableJson)
+        const table = Table.createTable(tableJson)
         const nextGameStartTable = table.prepareNextGame().handOverCards().drawCard()
-        await TableManager.writeJsonFile(nextGameStartTable)
+        await tm.updateTableJson(nextGameStartTable)
 
         const _wss = config.server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
         super.WSResponse({table: nextGameStartTable}, _wss)
         return super.jsonResponse(res, nextGameStartTable)
     }
 
-    protected async discardAndDraw(table: TableBase, card: CardBase) {
+    protected async discardAndDraw(table: Table, card: CardBase) {
 
         const playerInTurnId = table.getPlayerInTurn().id
         const time = this.timers.get(playerInTurnId);
@@ -181,7 +187,8 @@ class TableController extends Controller {
         // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
             const endGameTable = discardedTable.endGame()
-            const tablesJson = await TableManager.writeJsonFile(endGameTable)
+            const tm = TableManagerFactory.create()
+            const tablesJson = await tm.updateTableJson(endGameTable)
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
             })
@@ -190,8 +197,8 @@ class TableController extends Controller {
             // ゲーム終了
             if(endGameTable.isGameEndReached()) {
                 const endGameTimer = setTimeout(async() => {
-                    const tablesJson = await TableManager.deleteJsonFile(endGameTable)
-                    const tables = TableManager.toTables(tablesJson)
+                    const tablesJson = await tm.deleteTableJson(endGameTable)
+                    const tables = tm.toTables(tablesJson)
                     this.WSResponse({table: ''}, wss)
                     this.endGameTimers.delete(endGameTable.id)
                     const wssHome = config.server.getWSAllConnections()
@@ -203,11 +210,12 @@ class TableController extends Controller {
             // TODO　まだ試していない
             setTimeout(async() => {
                 const tableJson = tablesJson[endGameTable.id]
-                const table = TableBase.createTable(tableJson)
+                const table = Table.createTable(tableJson)
                 const preparedTable = table.prepareNextGame()
 
                 const nextGameStartTable = preparedTable.handOverCards().drawCard()
-                await TableManager.writeJsonFile(nextGameStartTable)
+                const tm = TableManagerFactory.create()
+                await tm.updateTableJson(nextGameStartTable)
                 this.WSResponse({table: nextGameStartTable}, wss)
             }, this.timeout)
             return endGameTable
@@ -215,12 +223,13 @@ class TableController extends Controller {
 
         // 次のターン
         const drawCardTable = discardedTable.drawCard()
-        await TableManager.writeJsonFile(drawCardTable)
+        const tm = TableManagerFactory.create()
+        await tm.updateTableJson(drawCardTable)
         this.setTimer(drawCardTable, wss)
         return drawCardTable;
     }
 
-    protected setTimer(table: TableBase, wss: (WebSocket.WebSocket | undefined)[]) {
+    protected setTimer(table: Table, wss: (WebSocket.WebSocket | undefined)[]) {
 
         const playerInTurn = table.getPlayerInTurn()
         const start = Date.now(); // タイマー開始時刻を記録

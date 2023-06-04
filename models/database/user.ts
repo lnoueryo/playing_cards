@@ -45,7 +45,7 @@ class User extends ModelBase {
 
     async getUserByEmail(params: any, exclusions: string[] = []) {
         let query = super.createSelectQuery(exclusions)
-        return await config.db.query(`${query} WHERE email = ?`, params)
+        return await config.DB.query(`${query} WHERE email = ?`, params)
     }
 
 }
