@@ -1,7 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import * as bcrypt from 'bcrypt';
+const bcrypt = require('bcryptjs');
 import { Controller } from "./utils";
 import { Session, CookieManager } from '../modules/auth';
 import { User, UserJson } from '../models/database';
