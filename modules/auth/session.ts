@@ -9,28 +9,36 @@ type User = {
     'tableId': string,
 }
 
+
 class Session {
 
     readonly manager: SessionManager
     readonly user: User
-    constructor(readonly id: string, user?: User) {
+    constructor(readonly id: string, user?: any) {
         this.manager = SessionManagerFactory.create()
-        this.user = user || this.getUser();
+        this.user = user;
     }
 
-    updateUser() {
-        this.manager.updateUser(this)
+    async updateUser() {
+        await this.manager.updateUser(this)
     }
 
-    deleteUser() {
-        this.manager.deleteUser(this)
+    static async createSession(id: string) {
+        const session = new Session(id);
+        const user = await session.manager.getUser(session);
+        if(user.length == 0) return new Session(id)
+        return new Session(id, user);
+    }
+
+    async deleteUser() {
+        await this.manager.deleteUser(this)
     }
 
     getUser(): User {
         return this.manager.getUser(this)
     }
 
-    static createSession(user: any): Session {
+    static createSessionId(user: any): Session {
         const id = uuidv4();
         return new Session(id, user);
     }

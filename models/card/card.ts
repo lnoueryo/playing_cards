@@ -3,7 +3,7 @@ import { Model } from "../utils";
 const SUITS = ['spade','clover', 'diamond', 'heart', 'joker']
 
 
-class CardBase implements Model {
+class CardBase {
     readonly id: number;
     readonly type: number;
     readonly number: number;

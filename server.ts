@@ -60,7 +60,7 @@ class Server {
     });
   }
 
-  routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+  async routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
     const requestUrl = url.parse(req.url || '', true);
     const pathname = requestUrl.pathname || '/';
 
@@ -73,7 +73,7 @@ class Server {
     if (req.method && pathname in this.routeHandlers[req.method]) {
       try {
         if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-        const session = new Session(sessionId);
+        const session = await Session.createSession(sessionId);
         if (session.hasUser()) return this.backToPreviousPage(req, res);
       } catch (error) {
         console.error(error)
@@ -88,7 +88,7 @@ class Server {
 
     try {
       // 認証
-      const session = new Session(sessionId);
+      const session = await Session.createSession(sessionId);
       if(!session.hasUser()) {
         console.warn('No user on session');
         cm.expireCookie()

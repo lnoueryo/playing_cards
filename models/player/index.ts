@@ -4,7 +4,7 @@ import { PlayerAggregate } from './player_aggregate'
 import { Hand } from "./hand";
 
 
-class Player implements Model {
+class Player {
 
     readonly id: number;
     readonly name: string;

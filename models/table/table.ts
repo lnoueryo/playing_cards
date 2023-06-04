@@ -3,7 +3,7 @@ import { CardBase, CardAggregate } from '../card'
 import { Player, PlayerAggregate } from '../player';
 import { v4 as uuidv4 } from 'uuid';
 
-class TableBase implements Model {
+class TableBase {
 
     readonly cardAggregate: CardAggregate;
     readonly playerAggregate: PlayerAggregate;

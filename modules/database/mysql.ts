@@ -34,9 +34,10 @@ class Mysql {
         });
     }
 
-    async query(queryString: string, retries: number = this.maxRetries): Promise<any> {
+    async query(queryString: string, params: any[], retries: number = this.maxRetries): Promise<any> {
         try {
-            const [rows] = await this.pool.query(queryString);
+            console.log(queryString, params)
+            const [rows] = await this.pool.execute(queryString, params);
             return rows;
         } catch (error: any) {
             if (retries <= 0) {
@@ -45,7 +46,7 @@ class Mysql {
             const delay = this.initialDelay * this.backoff ** (this.maxRetries - retries);
             console.error(`Query failed, retrying in ${delay}ms (${retries} retries left)...`);
             await this.sleep(delay);
-            return this.query(queryString, retries - 1);
+            return this.query(queryString, params, retries - 1);
         }
     }
 

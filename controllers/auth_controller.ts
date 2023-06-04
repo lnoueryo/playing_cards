@@ -3,12 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import * as bcrypt from 'bcrypt';
 import { Controller } from "./utils";
-import { Session, User, CookieManager } from '../modules/auth';
+import { Session, CookieManager } from '../modules/auth';
+import { User, UserJson } from '../models/database';
 
 
 class LoginController extends Controller {
 
     index(req: http.IncomingMessage, res: http.ServerResponse) {
+        const json = {email: 'popo62520908@gmail.com'}
+        const user = new User(json)
         return super.httpResponse(res, 'login.html')
     }
 
@@ -24,7 +27,7 @@ class LoginController extends Controller {
     async login(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
             // リクエストのボディからemailとpasswordを取得
-            const { email, password } = await super.getBody(req) as User;
+            const { email, password } = await super.getBody(req) as {email: string, password: string};
 
             // ログイン情報をJSONファイルから取得
             const loginData = this.getLoginData();
@@ -33,10 +36,11 @@ class LoginController extends Controller {
             const user = loginData.find((user) => user.email === email);
             if (user && await this.comparePassword(password, user.password)) {
                 // ログイン成功
-                const session = Session.createSession(user)
+                const session = Session.createSessionId(user)
                 session.updateUser()
                 const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
                 cm.setSessionIdToCookie(session)
+                console.log(res.getHeader('Set-Cookie'), 123456)
                 console.info('logged in')
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);

@@ -10,8 +10,8 @@ class HomeController extends Controller {
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
         const tablesJson = await TableManager.readJsonFile()
         if(TableManager.tableNotExists(session.tableId, tablesJson)) {
-            session = session.deleteTableId()
-            session.updateUser()
+            // session = session.deleteTableId()
+            // await session.updateUser()
         }
         if(session.hasTableId() && TableManager.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.tableId}`)
         return super.httpResponse(res, 'index.html')
