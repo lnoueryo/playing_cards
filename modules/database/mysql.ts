@@ -36,7 +36,6 @@ class Mysql {
 
     async query(queryString: string, params: any[], retries: number = this.maxRetries): Promise<any> {
         try {
-            console.log(queryString, params)
             const [rows] = await this.pool.execute(queryString, params);
             return rows;
         } catch (error: any) {
