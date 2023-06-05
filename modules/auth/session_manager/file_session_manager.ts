@@ -15,13 +15,13 @@ export class FileSessionManager extends SessionManager {
         this.SESSION_FILE_PATH = process.env.SESSION_FILE_PATH;
     }
 
-    getUsers() {
-        const usersStr = fs.readFileSync(this.SESSION_FILE_PATH, 'utf8');
+    async getUsers() {
+        const usersStr = await fs.readFileSync(this.SESSION_FILE_PATH, 'utf8');
         return JSON.parse(usersStr);
     }
 
-    getUser(session: Session) {
-        const users = this.getUsers();
+    async getUser(session: Session) {
+        const users = await this.getUsers();
         if(session.id in users == false) {
             console.warn('No user on session')
             return;

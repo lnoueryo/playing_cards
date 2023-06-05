@@ -37,9 +37,7 @@ class LoginController extends Controller {
             if (user && await this.comparePassword(password, user.password)) {
                 // ログイン成功
                 const session = Session.createSessionId(user)
-                session.createSession()
-                const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
-                cm.setValueToCookie(session.id)
+                session.saveToStorage(new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY))
                 console.info('logged in')
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);
@@ -59,9 +57,7 @@ class LoginController extends Controller {
 
     async logout(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
         try {
-            session.deleteUser()
-            const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
-            cm.expireCookie()
+            session.deleteUser(new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY))
             return super.jsonResponse(res, {});
         } catch (error) {
             // エラーハンドリング

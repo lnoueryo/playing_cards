@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { SessionManager, SessionManagerFactory } from './session_manager';
+import { CookieManager } from './cookie_manager';
+import { AuthToken } from '.';
 
 type User = {
     'id': number,
@@ -10,35 +12,37 @@ type User = {
 }
 
 
-class Session {
+class Session implements AuthToken {
 
     readonly manager: SessionManager
     readonly user: User
+
     constructor(readonly id: string, user?: any) {
         this.manager = SessionManagerFactory.create()
         this.user = user;
     }
 
-    async createSession() {
+    async getUser() {
+        return await this.manager.getUser(this)
+    }
+
+    async saveToStorage(cm: CookieManager) {
         await this.manager.createSession(this)
+        cm.setValueToCookie(this.id)
+    }
+
+    async deleteUser(cm: CookieManager) {
+        await this.manager.deleteUser(this)
+        cm.expireCookie()
     }
 
     async updateUser() {
         await this.manager.updateUser(this)
     }
 
-    static async createSession(id: string) {
-        const session = new Session(id);
-        const user = await session.manager.getUser(session);
-        return new Session(id, user);
-    }
-
-    async deleteUser() {
-        await this.manager.deleteUser(this)
-    }
-
-    getUser(): User {
-        return this.manager.getUser(this)
+    async createAuthToken() {
+        const user = await this.getUser();
+        return new Session(this.id, user);
     }
 
     static createSessionId(user: any): Session {
