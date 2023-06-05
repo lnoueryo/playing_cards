@@ -10,11 +10,11 @@ class HomeController extends Controller {
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
         const tm = TableManagerFactory.create()
         const tablesJson = await tm.getTablesJson()
-        if(session.tableId && tm.tableNotExists(session.tableId, tablesJson)) {
+        if(session.table_id && tm.tableNotExists(session.table_id, tablesJson)) {
             session = session.deleteTableId()
             await session.updateUser()
         }
-        if(session.hasTableId() && tm.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.tableId}`)
+        if(session.hasTableId() && tm.isPlaying(session, tablesJson)) return config.server.redirect(res, `/table/${session.table_id}`)
         return super.httpResponse(res, 'index.html')
     }
 

@@ -37,10 +37,10 @@ class LoginController extends Controller {
             if (user && await this.comparePassword(password, user.password)) {
                 // ログイン成功
                 const session = Session.createSessionId(user)
-                session.updateUser()
+                session.createSession()
                 const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
                 cm.setSessionIdToCookie(session)
-                console.log(res.getHeader('Set-Cookie'), 123456)
+                console.debug(res.getHeader('Set-Cookie'), 'setSessionIdToCookie')
                 console.info('logged in')
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);

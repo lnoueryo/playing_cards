@@ -11,7 +11,7 @@ abstract class TableManager {
     }
     // JSONファイルの読み取り
     isPlaying(session: Session, tablesJson: {[key: string]: TableJson})  {
-        return session.tableId in tablesJson && tablesJson[session.tableId].playerAggregate.players.some((player) => player.id == session.userId)
+        return session.table_id in tablesJson && tablesJson[session.table_id].playerAggregate.players.some((player) => player.id == session.user_id)
     }
     toTables(tablesJson: {[key: string]: TableJson}): Table[] {
         return Object.values(tablesJson).map((table: TableJson) => {

@@ -23,7 +23,9 @@
             <div v-if="time < 11">{{ time }}</div>
           </div>
           <div v-else>
-            <button @click="leaveTable">退出</button>
+            <form :action="'/api/table/' + user.table_id + '/exit'" method="post">
+              <input type="submit" value="退出">
+            </form>
           </div>
         </div>
       </div>
@@ -110,7 +112,7 @@ const getImgPath = (card) => {
 }
 
 const fetchTable = async() => {
-  const res = await axios.get('/api/table/' + user.value.tableId);
+  const res = await axios.get('/api/table/' + user.value.table_id);
   console.debug(res.data)
   table.value = Table.createTable(res.data.table)
   if(user.value.id in res.data) setCountDown(res.data)
@@ -133,16 +135,11 @@ const sortPlayers = (players) => {
 const discard = async(player, card) => {
   if(player.id != user.value.id || player.hand.cards.length != 6) return;
   resetTimer()
-  const res = await axios.post('/api/table/' + user.value.tableId + '/next', card);
-}
-
-const leaveTable = async(player, card) => {
-  const res = await axios.post('/api/table/' + user.value.tableId + '/exit');
-  if(res.status == 200) return location.href = '/';
+  const res = await axios.post('/api/table/' + user.value.table_id + '/next', card);
 }
 
 // const reset = async() => {
-//   const res = await axios.post('/api/table/' + user.value.tableId + '/reset');
+//   const res = await axios.post('/api/table/' + user.value.table_id + '/reset');
 //   console.debug(res.data)
 // }
 
@@ -164,8 +161,6 @@ const resetTimer = () => {
 
 const websocketHandler = (e) => {
   const dataJson = JSON.parse(e.data)
-  console.log(dataJson)
-  console.log(user.value)
   // テーブルのデータ
   if('table' in dataJson) {
     if(!dataJson.table) return location.href = '/'

@@ -29,6 +29,10 @@ export class FileSessionManager extends SessionManager {
         return users[session.id];
     }
 
+    createSession(session: Session) {
+        this.updateUser(session)
+    }
+
     updateUser(session: Session) {
         const users = this.getUsers();
         users[session.id] = session.user;

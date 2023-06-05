@@ -6,7 +6,7 @@ type User = {
     'name': string,
     'email': string,
     'password': string,
-    'tableId': string,
+    'table_id': string,
 }
 
 
@@ -19,6 +19,10 @@ class Session {
         this.user = user;
     }
 
+    async createSession() {
+        await this.manager.createSession(this)
+    }
+
     async updateUser() {
         await this.manager.updateUser(this)
     }
@@ -26,8 +30,7 @@ class Session {
     static async createSession(id: string) {
         const session = new Session(id);
         const user = await session.manager.getUser(session);
-        if(user.length == 0) return new Session(id)
-        return new Session(id, user[0]);
+        return new Session(id, user);
     }
 
     async deleteUser() {
@@ -44,11 +47,11 @@ class Session {
     }
 
     joinTable(id: string) {
-        this.user.tableId = id;
+        this.user.table_id = id;
         return new Session(this.id, this.user)
     }
 
-    get userId() {
+    get user_id() {
         return this.user.id;
     }
 
@@ -56,8 +59,8 @@ class Session {
         return this.user.name;
     }
 
-    get tableId() {
-        return this.user?.tableId;
+    get table_id() {
+        return this.user?.table_id;
     }
 
     hasUser() {
@@ -65,19 +68,19 @@ class Session {
     }
 
     hasTableId() {
-        return !!this.tableId
+        return !!this.table_id
     }
 
     deleteTableId() {
         const data = this.user;
-        if(data && 'tableId' in data) {
-            data.tableId = '';
+        if(data && 'table_id' in data) {
+            data.table_id = '';
         }
         return new Session(this.id, data)
     }
 
-    isNotMatchingTableId(tableId: string) {
-        return this.user.tableId != tableId;
+    isNotMatchingTableId(table_id: string) {
+        return this.user.table_id != table_id;
     }
 
 }

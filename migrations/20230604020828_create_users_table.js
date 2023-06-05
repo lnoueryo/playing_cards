@@ -11,6 +11,7 @@ exports.up = function(knex) {
     table.string('session').nullable().unique().index();
     table.string('token').nullable().unique().index();
     table.string('image').notNullable();
+    table.timestamps(true, true);
   });
 };
 
