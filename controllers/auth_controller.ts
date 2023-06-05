@@ -39,8 +39,7 @@ class LoginController extends Controller {
                 const session = Session.createSessionId(user)
                 session.createSession()
                 const cm = new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY)
-                cm.setSessionIdToCookie(session)
-                console.debug(res.getHeader('Set-Cookie'), 'setSessionIdToCookie')
+                cm.setValueToCookie(session.id)
                 console.info('logged in')
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);

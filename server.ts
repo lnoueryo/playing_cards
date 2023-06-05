@@ -69,7 +69,7 @@ class Server {
 
     // 認証が不要なパスに対する処理
     const cm = new CookieManager(req, res, this.SESSION_ID_COOKIE_KEY)
-    const sessionId = cm.getSessionId()
+    const sessionId = cm.getCookieValue()
     if (req.method && pathname in this.routeHandlers[req.method]) {
       try {
         if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
@@ -82,9 +82,7 @@ class Server {
       }
     }
 
-    if(!sessionId) {
-      return this.redirect(res, '/login');
-    }
+    if(!sessionId) return this.redirect(res, '/login');
 
     try {
       // 認証

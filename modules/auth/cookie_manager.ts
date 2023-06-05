@@ -8,18 +8,18 @@ class CookieManager {
         if(!this.id) throw new Error('No cookie key')
     }
 
-    setSessionIdToCookie(session: Session): void {
+    setValueToCookie(id: string): void {
         let date = new Date();
         date.setFullYear(date.getFullYear() + 10); // 10年後の日付を設定
-        this.response.setHeader('Set-Cookie', `${this.id}=${session.id}; Path=/; Expires=${date.toUTCString()}; HttpOnly`);
+        this.response.setHeader('Set-Cookie', `${this.id}=${id}; Path=/; Expires=${date.toUTCString()}; HttpOnly`);
     }
 
-    getSessionId(): string | undefined {
+    getCookieValue(): string {
         const cookies = this.request.headers.cookie;
-        if (!cookies) return;
+        if (!cookies) throw new Error('No cookie value');
 
         const cookieString = cookies.split(';').find(c => c.trim().startsWith(this.id + '='));
-        if (!cookieString) return;
+        if (!cookieString) throw new Error('No cookie key');
 
         const value = cookieString.split('=')[1];
         return value;
