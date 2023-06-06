@@ -3,8 +3,9 @@ import fs from 'fs';
 import path from 'path';
 const bcrypt = require('bcryptjs');
 import { Controller } from "./utils";
-import { Session, CookieManager } from '../modules/auth';
-import { User, UserJson } from '../models/database';
+import { Session, CookieManager, AuthToken } from '../modules/auth';
+import { User } from '../models/database';
+import { config } from '../main';
 
 
 class LoginController extends Controller {
@@ -19,7 +20,12 @@ class LoginController extends Controller {
         return super.httpResponse(res, 'login.html')
     }
 
-    async user(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
+    async session(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
+        const user = session.user
+        return super.jsonResponse(res, user);
+    }
+
+    async token(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
         const user = session.user
         return super.jsonResponse(res, user);
     }
@@ -36,8 +42,8 @@ class LoginController extends Controller {
             const user = loginData.find((user) => user.email === email);
             if (user && await this.comparePassword(password, user.password)) {
                 // ログイン成功
-                const session = Session.createSessionId(user)
-                session.saveToStorage(new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY))
+                const session = Session.createSessionId(user, new CookieManager(req, res, config.server.SESSION_ID_COOKIE_KEY))
+                await session.saveToStorage()
                 console.info('logged in')
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);
@@ -55,9 +61,9 @@ class LoginController extends Controller {
         }
     }
 
-    async logout(req: http.IncomingMessage, res: http.ServerResponse, session: Session) {
+    async logout(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
         try {
-            session.deleteUser(new CookieManager(req, res, process.env.SESSION_ID_COOKIE_KEY))
+            session.deleteUser()
             return super.jsonResponse(res, {});
         } catch (error) {
             // エラーハンドリング

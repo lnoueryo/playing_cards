@@ -5,22 +5,32 @@ import url from 'url';
 import * as WebSocket from 'ws';
 import { Session } from './modules/auth/session';
 import { CookieManager } from './modules/auth/cookie_manager';
-import { routeHandlers, sessionRequiredRouteHandlers } from './routes';
+import { routeHandlers, sessionRequiredRouteHandlers, tokenRequiredRouteHandlers } from './routes';
+import { AuthToken, JsonWebToken } from './modules/auth';
+import { config } from './main';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
-type AuthenticatedHandler = (req: http.IncomingMessage, res: http.ServerResponse, session: Session, params?: { [key: string]: string }) => void;
+type AuthenticatedHandler = (req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params?: { [key: string]: string }) => void;
 
 class Server {
   private routeHandlers: { [path: string]: {[path: string]: Handler} };
   private sessionRequiredRouteHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
+  private tokenRequiredRouteHandlers: { [path: string]: {[path: string]: AuthenticatedHandler} };
   private clients = new Map<number, WebSocket.WebSocket>();
   readonly SESSION_ID_COOKIE_KEY: string;
+  readonly TOKEN_COOKIE_KEY: string;
+  readonly SECRET_KEY: string;
 
   constructor(private httpPort: number) {
     if(!process.env.SESSION_ID_COOKIE_KEY) throw new Error('SESSION_ID_COOKIE_KEY is not defined on .env')
+    if(!process.env.SECRET_KEY) throw new Error('SESSION_ID_COOKIE_KEY is not defined on .env')
+    if(!process.env.TOKEN_COOKIE_KEY) throw new Error('TOKEN_COOKIE_KEY is not defined on .env')
     this.SESSION_ID_COOKIE_KEY = process.env.SESSION_ID_COOKIE_KEY
+    this.TOKEN_COOKIE_KEY = process.env.TOKEN_COOKIE_KEY
+    this.SECRET_KEY = process.env.SECRET_KEY
     this.routeHandlers = routeHandlers
     this.sessionRequiredRouteHandlers = sessionRequiredRouteHandlers;
+    this.tokenRequiredRouteHandlers = tokenRequiredRouteHandlers;
   }
 
   private handleStaticFile(req: http.IncomingMessage, res: http.ServerResponse, pathname: string) {
@@ -61,51 +71,64 @@ class Server {
   async routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
     const requestUrl = url.parse(req.url || '', true);
     const pathname = requestUrl.pathname || '/';
-
     // 静的ファイルへのリクエストに対する処理
     if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
 
     // 認証が不要なパスに対する処理
-    const cm = new CookieManager(req, res, this.SESSION_ID_COOKIE_KEY)
-    const sessionId = cm.getCookieValue()
+    const cmSession = new CookieManager(req, res, this.SESSION_ID_COOKIE_KEY)
+    const sessionId = cmSession.getCookieValue()
+    const cmToken = new CookieManager(req, res, this.TOKEN_COOKIE_KEY)
+    const token = cmToken.getCookieValue()
+
     if (req.method && pathname in this.routeHandlers[req.method]) {
-      try {
-        if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-        const session = await new Session(sessionId).createAuthToken();
-        if (session.hasUser()) return this.backToPreviousPage(req, res);
-      } catch (error) {
-        console.error(error)
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        return res.end('Error: Error');
-      }
+      if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
+      const session = await new Session(sessionId, new CookieManager(req, res, config.sessionIdCookieKey)).createAuthToken();
+      if (session.hasUser()) return this.backToPreviousPage(req, res);
     }
 
     if(!sessionId) return this.redirect(res, '/login');
 
-    try {
-      // 認証
-      const session = await new Session(sessionId).createAuthToken();
-      if(!session.hasUser()) {
-        console.warn('No user on session');
-        cm.expireCookie()
-        return this.redirect(res, '/login');
-      }
-      // ルーティング
+    // セッションid認証
+    if(token) {
+      const jwt = await new JsonWebToken(token, new CookieManager(req, res, config.tokenCookieKey)).createAuthToken();
+      // 認証トークン
       if (req.method) {
-        for (const pattern in this.sessionRequiredRouteHandlers[req.method]) {
+        for (const pattern in this.tokenRequiredRouteHandlers[req.method]) {
           const params = this.matchPath(pattern, pathname);
-          if (params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params);
+          if(params) return this.tokenRequiredRouteHandlers[req.method][pattern](req, res, jwt, params || {id: ''});
         }
       }
+      console.log(pathname)
+    }
+
+    const session = await new Session(sessionId, new CookieManager(req, res, config.sessionIdCookieKey)).createAuthToken();
+
+    if(!session.hasUser()) {
+      cmSession.expireCookie()
+      return this.redirect(res, '/login');
+    }
+    // ルーティング
+    if (req.method) {
+      for (const pattern in this.sessionRequiredRouteHandlers[req.method]) {
+        const params = this.matchPath(pattern, pathname);
+        if (!token) {
+          if(params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params || {id: ''});
+        }
+        else {
+          const jwt = await new JsonWebToken(token, new CookieManager(req, res, config.tokenCookieKey)).createAuthToken();
+          return this.redirect(res, `/table/${jwt.user.table_id}`)
+        }
+      }
+    }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Error: Not Found');
+    try {
     } catch (error) {
       console.error(error)
       res.writeHead(500, { 'Content-Type': 'text/plain' });
       return res.end('Error: Error');
     }
-
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Error: Not Found');
-
   }
 
   createWebsocketServer(server: http.Server) {

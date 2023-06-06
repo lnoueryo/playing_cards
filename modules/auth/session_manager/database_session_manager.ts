@@ -43,7 +43,7 @@ export class DatabaseSessionManager extends SessionManager {
         }
     }
 
-    async updateUser(session: Session) {
+    async updateTableId(session: Session) {
 
         const query = 'UPDATE sessions SET table_id = ? WHERE id = ?';
         const params = [session.table_id, session.id]

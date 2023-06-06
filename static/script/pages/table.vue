@@ -119,7 +119,7 @@ const fetchTable = async() => {
 }
 
 const fetchUser = async() => {
-  const res = await handleAsync(async() => await axios.get('/api/user'));
+  const res = await handleAsync(async() => await axios.get('/api/token'));
   user.value = res.data
   await fetchTable()
   websocketConnector.value = new WebsocketConnector(user.value.id, websocketHandler)

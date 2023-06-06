@@ -16,19 +16,27 @@ const routeHandlers = {
 const sessionRequiredRouteHandlers = {
   'GET': {
     '/': homeController.index.bind(homeController),
-    '/table/:id': tableController.index.bind(tableController),
     '/api/table': homeController.tables.bind(homeController),
-    '/api/table/:id': tableController.show.bind(tableController),
-    '/api/user': loginController.user.bind(loginController),
+    '/api/session': loginController.session.bind(loginController),
   },
   'POST': {
     '/api/logout': loginController.logout.bind(loginController),
-    '/api/table/create': tableController.create.bind(tableController),
-    '/api/table/:id/join': tableController.joinPlayer.bind(tableController),
+    '/api/table/create': homeController.create.bind(tableController),
+    '/api/table/join': homeController.joinPlayer.bind(tableController),
+  }
+};
+
+const tokenRequiredRouteHandlers = {
+  'GET': {
+    '/table/:id': tableController.index.bind(tableController),
+    '/api/token': loginController.token.bind(loginController),
+    '/api/table/:id': tableController.show.bind(tableController),
+  },
+  'POST': {
     '/api/table/:id/reset': tableController.reset.bind(tableController),
     '/api/table/:id/next': tableController.next.bind(tableController),
     '/api/table/:id/exit': tableController.exit.bind(tableController),
   }
-};
+}
 
-export { routeHandlers, sessionRequiredRouteHandlers }
+export { routeHandlers, sessionRequiredRouteHandlers, tokenRequiredRouteHandlers }

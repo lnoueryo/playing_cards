@@ -1,4 +1,4 @@
-import { Session } from '../../../modules/auth';
+import { AuthToken } from '../../../modules/auth';
 import { Table } from '../index'
 
 abstract class TableManager {
@@ -10,7 +10,7 @@ abstract class TableManager {
         return id in tablesJson == false;
     }
     // JSONファイルの読み取り
-    isPlaying(session: Session, tablesJson: {[key: string]: TableJson})  {
+    isPlaying(session: AuthToken, tablesJson: {[key: string]: TableJson})  {
         return session.table_id in tablesJson && tablesJson[session.table_id].playerAggregate.players.some((player) => player.id == session.user_id)
     }
     toTables(tablesJson: {[key: string]: TableJson}): Table[] {

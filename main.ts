@@ -23,10 +23,16 @@ const mongo_name = process.env.MONGO_DB_NAME
 const mongo_collection = process.env.MONGO_DB_COLLECTION
 const mongoDB = new MongoDB(mongo_host, mongo_user, mongo_password, mongo_port, mongo_name, mongo_collection)
 
+const secretKey = process.env.SECRET_KEY || ''
+const sessionIdCookieKey = process.env.SESSION_ID_COOKIE_KEY || ''
+const tokenCookieKey = process.env.TOKEN_COOKIE_KEY || ''
 
 const config = {
     server,
     DB,
-    mongoDB
+    mongoDB,
+    secretKey,
+    sessionIdCookieKey,
+    tokenCookieKey
 }
 export { config }

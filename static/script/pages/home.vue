@@ -36,16 +36,15 @@ const createTable = async() => {
 }
 
 const fetchUser = async() => {
-  const res = await handleAsync(async() => await axios.get('/api/user'));
+  const res = await handleAsync(async() => await axios.get('/api/session'));
   user.value = res.data
   websocketConnector.value = new WebsocketConnector(user.value.id, websocketHandler)
   websocketConnector.value.connectWebsocket()
 }
 
 const joinTable = async(table) => {
-  const res = await handleAsync(async() => await axios.post(`/api/table/${table.id}/join`));
+  const res = await handleAsync(async() => await axios.post(`/api/table/join`, {table_id: table.id}));
   if(res.status == 200) return goToTable(res.data.id)
-  console.log(table)
   // goToTable(table.id)
 }
 

@@ -4,9 +4,7 @@ import { Session } from './session';
 
 class CookieManager {
 
-    constructor(private request: http.IncomingMessage, private response: http.ServerResponse, readonly id?: string) {
-        if(!this.id) throw new Error('No cookie key')
-    }
+    constructor(readonly request: http.IncomingMessage, readonly response: http.ServerResponse, readonly id: string) {}
 
     setValueToCookie(id: string): void {
         let date = new Date();
@@ -14,12 +12,12 @@ class CookieManager {
         this.response.setHeader('Set-Cookie', `${this.id}=${id}; Path=/; Expires=${date.toUTCString()}; HttpOnly`);
     }
 
-    getCookieValue(): string {
+    getCookieValue() {
         const cookies = this.request.headers.cookie;
-        if (!cookies) throw new Error('No cookie value');
+        if (!cookies) return '';
 
         const cookieString = cookies.split(';').find(c => c.trim().startsWith(this.id + '='));
-        if (!cookieString) throw new Error('No cookie key');
+        if (!cookieString) return '';
 
         const value = cookieString.split('=')[1];
         return value;

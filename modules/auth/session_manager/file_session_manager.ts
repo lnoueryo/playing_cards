@@ -30,19 +30,20 @@ export class FileSessionManager extends SessionManager {
     }
 
     createSession(session: Session) {
-        this.updateUser(session)
+        this.updateTableId(session)
     }
 
-    updateUser(session: Session) {
-        const users = this.getUsers();
+    async updateTableId(session: Session) {
+        const users = await this.getUsers();
         users[session.id] = session.user;
         const data = JSON.stringify(users, null, 2);
-        fs.writeFileSync(this.SESSION_FILE_PATH, data, 'utf8');
+        await fs.writeFileSync(this.SESSION_FILE_PATH, data, 'utf8');
+        return users
     }
 
-    deleteUser(session: Session) {
+    async deleteUser(session: Session) {
         // JSONファイルからセッションデータを読み込む
-        const users = this.getUsers();
+        const users = await this.getUsers();
 
         // セッションデータが存在すれば削除する
         if (users[session.id]) {

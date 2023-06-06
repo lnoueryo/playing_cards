@@ -14,10 +14,10 @@ type User = {
 
 class Session implements AuthToken {
 
-    readonly manager: SessionManager
+    protected readonly manager: SessionManager
     readonly user: User
 
-    constructor(readonly id: string, user?: any) {
+    constructor(readonly id: string, readonly cm: CookieManager, user?: any) {
         this.manager = SessionManagerFactory.create()
         this.user = user;
     }
@@ -26,40 +26,43 @@ class Session implements AuthToken {
         return await this.manager.getUser(this)
     }
 
-    async saveToStorage(cm: CookieManager) {
+    async saveToStorage() {
         await this.manager.createSession(this)
-        cm.setValueToCookie(this.id)
+        this.cm.setValueToCookie(this.id)
     }
 
-    async deleteUser(cm: CookieManager) {
+    async deleteUser() {
         await this.manager.deleteUser(this)
-        cm.expireCookie()
+        this.cm.expireCookie()
     }
 
-    async updateUser() {
-        await this.manager.updateUser(this)
+    async updateTableId(id: string) {
+        const user = JSON.parse(JSON.stringify(this.user));
+        user['table_id'] = id
+        const session = new Session(this.id, user)
+        await this.manager.updateTableId(session)
+        return session
     }
 
     async createAuthToken() {
         const user = await this.getUser();
-        return new Session(this.id, user);
+        return new Session(this.id, this.cm, user);
     }
 
-    static createSessionId(user: any): Session {
+    static createSessionId(user: any, cm: CookieManager): Session {
         const id = uuidv4();
-        return new Session(id, user);
+        return new Session(id, cm, user);
     }
 
-    joinTable(id: string) {
-        this.user.table_id = id;
-        return new Session(this.id, this.user)
+    static async createSession(user: User, sessionId: string, cm: CookieManager) {
+        return new Session(sessionId, cm, user);
     }
 
     get user_id() {
         return this.user.id;
     }
 
-    get userName() {
+    get user_name() {
         return this.user.name;
     }
 
@@ -73,14 +76,6 @@ class Session implements AuthToken {
 
     hasTableId() {
         return !!this.table_id
-    }
-
-    deleteTableId() {
-        const data = this.user;
-        if(data && 'table_id' in data) {
-            data.table_id = '';
-        }
-        return new Session(this.id, data)
     }
 
     isNotMatchingTableId(table_id: string) {

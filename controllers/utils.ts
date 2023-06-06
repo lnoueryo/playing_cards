@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { Model } from '../models/utils';
 import * as WebSocket from 'ws';
+import { config } from '../main';
+import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
+import { Table } from '../models/table';
+import { CardBase } from '../models/card';
 
 class Controller {
 
@@ -77,4 +81,83 @@ class Controller {
 
 }
 
-export { Controller }
+class TableRule extends Controller {
+
+    protected timers = new Map()
+    protected timeout = 6000
+    protected endGameTimers = new Map()
+    protected endGameTimeout = 20000
+
+    protected async discardAndDraw(table: Table, card: CardBase) {
+
+        const playerInTurnId = table.getPlayerInTurn().id
+        const time = this.timers.get(playerInTurnId);
+        if(time) {
+            clearTimeout(time.timer)
+            this.timers.delete(playerInTurnId)
+        }
+        const discardedTable = table.discard(card)
+
+        const wss = config.server.getWSConnections(discardedTable.getPlayerIds())
+        // 次のゲーム
+        if(discardedTable.isGameEndRoundReached()) {
+            const endGameTable = discardedTable.endGame()
+            const tm = TableManagerFactory.create()
+            const tablesJson = await tm.updateTableJson(endGameTable)
+            endGameTable.playerAggregate.players.forEach(player => {
+                console.log(player.hand)
+            })
+            this.WSResponse({table: endGameTable}, wss)
+
+            // ゲーム終了
+            if(endGameTable.isGameEndReached()) {
+                const endGameTimer = setTimeout(async() => {
+                    await tm.deleteTableJson(endGameTable)
+                    this.endGameTimers.delete(endGameTable.id)
+                    const tablesJson = await tm.getTablesJson()
+                    this.WSResponse({table: ''}, wss)
+
+                    const wssHome = config.server.getWSAllConnections()
+                    const tables = tm.toTables(tablesJson)
+                    super.WSResponse({tables: tables}, wssHome)
+                }, this.endGameTimeout)
+                this.endGameTimers.set(endGameTable.id, endGameTimer)
+                return endGameTable
+            }
+            // TODO　まだ試していない
+            setTimeout(async() => {
+                const tableJson = tablesJson[endGameTable.id]
+                const table = Table.createTable(tableJson)
+                const preparedTable = table.prepareNextGame()
+
+                const nextGameStartTable = preparedTable.handOverCards().drawCard()
+                const tm = TableManagerFactory.create()
+                await tm.updateTableJson(nextGameStartTable)
+                this.WSResponse({table: nextGameStartTable}, wss)
+            }, this.timeout)
+            return endGameTable
+        }
+
+        // 次のターン
+        const drawCardTable = discardedTable.drawCard()
+        const tm = TableManagerFactory.create()
+        await tm.updateTableJson(drawCardTable)
+        this.setTimer(drawCardTable, wss)
+        return drawCardTable;
+    }
+
+    protected setTimer(table: Table, wss: (WebSocket.WebSocket | undefined)[]) {
+
+        const playerInTurn = table.getPlayerInTurn()
+        const start = Date.now(); // タイマー開始時刻を記録
+        const timer = setTimeout(() => {
+            const drawnCard = playerInTurn.getDrawnCard()
+            this.discardAndDraw(table, drawnCard)
+        }, this.timeout)
+
+        this.timers.set(playerInTurn.id, {timer, start})
+        this.WSResponse({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}}, wss)
+    }
+}
+
+export { Controller, TableRule }
