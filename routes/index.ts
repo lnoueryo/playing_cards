@@ -10,6 +10,7 @@ const routeHandlers = {
   },
   'POST': {
     '/api/login': loginController.login.bind(loginController),
+    '/api/user/create': loginController.create.bind(loginController),
   }
 }
 

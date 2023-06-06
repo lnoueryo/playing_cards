@@ -12,7 +12,7 @@ class TableController extends TableRule {
         const tm = TableManagerFactory.create()
         const tablesJson = await tm.getTablesJson()
         if(tm.tableNotExists(params.id, tablesJson) || !session.hasTableId() || !tm.isPlaying(session, tablesJson)) {
-            session.deleteUser()
+            session.deleteSession()
             return config.server.redirect(res, '/')
         }
         const tableJson = tablesJson[params.id]

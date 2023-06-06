@@ -29,7 +29,7 @@ class JsonWebToken {
         this.cm.setValueToCookie(this.id)
     }
 
-    async deleteUser() {
+    async deleteSession() {
         this.cm.expireCookie()
     }
 

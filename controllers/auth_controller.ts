@@ -11,8 +11,10 @@ class LoginController extends Controller {
         return super.httpResponse(res, 'login.html')
     }
 
-    create(req: http.IncomingMessage, res: http.ServerResponse) {
-        return super.httpResponse(res, 'login.html')
+    async create(req: http.IncomingMessage, res: http.ServerResponse) {
+        const { name, password, email, image } = await this.getBody(req) as {name: string, password: string, email: string, image: string}
+        await User.create(name, password, email, image)
+        return super.jsonResponse(res, {})
     }
 
     async session(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
@@ -55,7 +57,7 @@ class LoginController extends Controller {
 
     async logout(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
         try {
-            session.deleteUser()
+            await session.deleteSession()
             return super.jsonResponse(res, {});
         } catch (error) {
             // エラーハンドリング

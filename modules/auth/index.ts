@@ -8,7 +8,7 @@ interface AuthToken {
     user?: any
     getUser(session: Session): any;
     saveToStorage(cm: CookieManager): void;
-    deleteUser(): void;
+    deleteSession(): void;
     createAuthToken(id: string): Promise<AuthToken>;
     hasTableId(): boolean
     updateTableId(id: string): Promise<AuthToken>

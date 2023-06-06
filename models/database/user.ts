@@ -18,7 +18,7 @@ class User extends ModelBase implements User {
     public email: string
     public image: string
 
-    constructor(id: number, name: string, password: string, email: string, image: string, created_at: string, updated_at: string) {
+    constructor(id: number, name: string, password: string, email: string, image: string, created_at: string = '', updated_at: string = '') {
         super(created_at, updated_at)
         this.id = id;
         this.name = name;
@@ -26,10 +26,6 @@ class User extends ModelBase implements User {
         this.email = email;
         this.image = image;
     }
-    a(a: string) {
-        // this[a] =
-    }
-
     async hashPassword(password: string): Promise<string> {
         const saltRounds = 10; // ハッシュ化のコストパラメーター
         const salt = await bcrypt.genSalt(saltRounds);
@@ -42,23 +38,22 @@ class User extends ModelBase implements User {
     }
 
     static async findByEmail(email: string): Promise<User | null> {
-        const [rows] = await config.DB.query('SELECT * FROM users WHERE email = ?', [email])
-
+        const rows = await config.DB.query('SELECT * FROM users WHERE email = ?', [email]) as any
         if (!Array.isArray(rows) || rows.length === 0) {
           return null;
         }
 
-        const user = rows[0];
-        return new User(user.id, user.name, user.password, user.email, user.session, user.token, user.image);
+        const {id, name, password, image } = rows[0] as User;
+        return new User(id, name, password, email, image);
     }
 
-    static async create(name: string, password: string, email: string, session: string, token: string, image: string): Promise<User> {
+    static async create(name: string, password: string, email: string, image: string): Promise<User> {
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        const [result] = await config.DB.query('INSERT INTO users (name, password, email, image) VALUES (?, ?, ?, ?, ?, ?)', [name, hashedPassword, email, image]);
-
+        console.log(name, password, email, image)
+        const result = await config.DB.query('INSERT INTO users (name, password, email, image) VALUES (?, ?, ?, ?)', [name, hashedPassword, email, image || '']);
+        console.log(result)
         const id = result.insertId;
-        return new User(id, name, hashedPassword, email, session, token, image);
+        return new User(id, name, hashedPassword, email, image);
     }
 
     async update(data: Partial<User>): Promise<User> {

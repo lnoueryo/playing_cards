@@ -31,7 +31,7 @@ class Session implements AuthToken {
         this.cm.setValueToCookie(this.id)
     }
 
-    async deleteUser() {
+    async deleteSession() {
         await this.manager.deleteUser(this)
         this.cm.expireCookie()
     }

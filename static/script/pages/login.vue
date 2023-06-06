@@ -1,29 +1,26 @@
 <template>
-  <input type="text" name="name" v-model="user.name">
-  <input type="text" name="email" v-model="user.email">
-  <input type="password" name="password" v-model="user.password">
-  <button @click="login">ログイン</button>
-  <button @click="home">ホーム</button>
+  <SignIn v-if="page"></SignIn>
+  <SignUp @signUp="signedUp" v-else></SignUp>
+  <button @click="togglePage">{{ button }} Page</button>
 </template>
+
 <script setup>
-import axios from 'axios';
-import { reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
+import SignIn from '../components/sign-in.vue'
+import SignUp from '../components/sign-up.vue'
 
-const count = ref(0)
+const page = ref(true)
 
-const user = reactive({
-  name: '',
-  email: '',
-  password: '',
+const togglePage = () => {
+  page.value = !page.value
+}
+
+const button = computed(() => {
+  return page.value ? 'Sign Up' : 'Sign In'
 })
 
-const login = async() => {
-  console.log(user)
-  const res = await axios.post('/api/login', user);
-  if(res.status == 200) return location.href = '/';
+const signedUp = () => {
+  page.value = true;
 }
 
-const home = () => {
-  location.href = '/'
-}
 </script>
