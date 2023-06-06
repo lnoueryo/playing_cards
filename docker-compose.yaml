@@ -10,6 +10,22 @@ services:
     ports:
       - "3100:3100"
     environment:
+      SECRET_KEY: "b163fe16747b8c8290feff9473e9a818d43013a71aa371642ef2013ef58f5d82"
+      SESSION_ID_COOKIE_KEY: sessionid
+      TOKEN_COOKIE_KEY: token
+      DB_NAME: playing_cards
+      DB_HOST: 172.16.0.2
+      DB_PASSWORD: password
+      DB_USER: "root"
+      MONGO_DB_HOST: 172.16.0.6
+      MONGO_DB_USER: root
+      MONGO_DB_PASSWORD: example
+      MONGO_DB_PORT: 27017
+      MONGO_DB_NAME: playing_cards
+      MONGO_DB_COLLECTION: tables
+      SESSION: database
+      TABLE: database
+      TABLE_TOKEN: jwt
       CHOKIDAR_USEPOLLING: true
       NODE_OPTIONS: --max_old_space_size=8192
     volumes:
