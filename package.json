@@ -7,6 +7,7 @@
     "dev:front": "webpack --watch",
     "dev:server": "nodemon",
     "prod:server": "pm2 start --watch",
+    "prod": "nodemon --exitcrash",
     "dev": "run-p dev:*",
     "build": "webpack",
     "test": "echo \"Error: no test specified\" && exit 1"
