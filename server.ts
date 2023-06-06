@@ -3,7 +3,7 @@ import http from 'http';
 import path from 'path';
 import url from 'url';
 import * as WebSocket from 'ws';
-import { Session } from './modules/auth/session';
+import { Session } from './modules/auth/auth_token';
 import { CookieManager } from './modules/auth/cookie_manager';
 import { routeHandlers, sessionRequiredRouteHandlers, tokenRequiredRouteHandlers } from './routes';
 import { AuthToken, JsonWebToken } from './modules/auth';

@@ -1,4 +1,4 @@
-import { Session } from '../session'
+import { Session } from '../auth_token'
 export abstract class SessionManager {
     abstract getUser(session: Session): any;
     abstract createSession(session: Session): any;

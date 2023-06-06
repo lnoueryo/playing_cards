@@ -1,7 +1,4 @@
 import http from 'http';
-import fs from 'fs';
-import path from 'path';
-const bcrypt = require('bcryptjs');
 import { Controller } from "./utils";
 import { Session, CookieManager, AuthToken } from '../modules/auth';
 import { User } from '../models/database';
@@ -11,8 +8,6 @@ import { config } from '../main';
 class LoginController extends Controller {
 
     index(req: http.IncomingMessage, res: http.ServerResponse) {
-        const json = {email: 'popo62520908@gmail.com'}
-        const user = new User(json)
         return super.httpResponse(res, 'login.html')
     }
 
@@ -33,14 +28,11 @@ class LoginController extends Controller {
     async login(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
             // リクエストのボディからemailとpasswordを取得
-            const { email, password } = await super.getBody(req) as {email: string, password: string};
+            const { email, password } = await this.getBody(req) as {email: string, password: string};
 
-            // ログイン情報をJSONファイルから取得
-            const loginData = this.getLoginData();
+            const user = await User.findByEmail(email)
 
-            // ログイン情報の検証
-            const user = loginData.find((user) => user.email === email);
-            if (user && await this.comparePassword(password, user.password)) {
+            if (user && await user.comparePassword(password)) {
                 // ログイン成功
                 const session = Session.createSessionId(user, new CookieManager(req, res, config.server.SESSION_ID_COOKIE_KEY))
                 await session.saveToStorage()
@@ -71,22 +63,6 @@ class LoginController extends Controller {
             const response = { message: 'ログアウト中にエラーが発生しました' };
             return super.jsonResponse(res, response);
         }
-    }
-
-    protected getLoginData(): any[] {
-        const rawData = fs.readFileSync(path.join(__dirname, '..', 'storage/login.json'), 'utf-8');
-        return JSON.parse(rawData);
-    }
-
-    async hashPassword(password: string): Promise<string> {
-        const saltRounds = 10; // ハッシュ化のコストパラメーター
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        return hashedPassword;
-    }
-
-    protected async comparePassword(password: string, passwordHash: string): Promise<boolean> {
-        return await bcrypt.compare(password, passwordHash);
     }
 
 }

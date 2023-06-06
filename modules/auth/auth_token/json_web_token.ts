@@ -1,5 +1,5 @@
-import { config } from "../../main";
-import { CookieManager } from "./cookie_manager";
+import { config } from "../../../main";
+import { CookieManager } from "../cookie_manager";
 import { User } from "./session";
 import jwt from 'jsonwebtoken';
 

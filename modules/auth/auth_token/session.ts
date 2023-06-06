@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { SessionManager, SessionManagerFactory } from './session_manager';
-import { CookieManager } from './cookie_manager';
-import { AuthToken } from '.';
+import { SessionManager, SessionManagerFactory } from '../session_manager';
+import { CookieManager } from '../cookie_manager';
+import { AuthToken } from '..';
 
 type User = {
     'id': number,

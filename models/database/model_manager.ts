@@ -1,25 +1,15 @@
 import { Mysql } from "../../modules/database/mysql";
 
 
-interface Model {
+interface ModelBase {
     toJson(): any
 }
 
 
-class ModelBase {
-    createdAt: string
+class ModelBase implements ModelBase {
 
-    constructor(json: any, private readonly columns: string[]) {
-        this.createdAt = json?.createdAt || '';
-    }
+    constructor(readonly created_at: string, readonly updated_at: string) {}
 
-    createSelectQuery(exclusions: string[]) {
-        const exclusionSet = new Set(exclusions);
-        let query = 'SELECT '
-        const excludedColumns = this.columns.filter(column => !exclusionSet.has(column));
-        excludedColumns.forEach(column => query += column + ', ')
-        return query.replace(/,\s*$/, ' ') + 'FROM ' + 'users';
-    }
 }
 
 
@@ -66,4 +56,4 @@ class ModelManager {
 
 }
 
-export { Model, ModelBase, ModelManager}
+export { ModelBase, ModelManager}

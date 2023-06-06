@@ -1,5 +1,5 @@
 import http from 'http'
-import { Session } from './session';
+import { Session } from './auth_token';
 
 
 class CookieManager {

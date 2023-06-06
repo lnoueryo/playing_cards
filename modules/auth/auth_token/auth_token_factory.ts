@@ -1,8 +1,8 @@
 import { Session, User } from "./session";
 import { JsonWebToken } from "./json_web_token";
-import { CookieManager } from "./cookie_manager";
+import { CookieManager } from "../cookie_manager";
 import http from 'http'
-import { config } from "../../main";
+import { config } from "../../../main";
 
 
 export class AuthTokenManagerFactory {

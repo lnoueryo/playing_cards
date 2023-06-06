@@ -6,7 +6,7 @@ import { TableManagerFactory } from '../models/table/table_manager/table_manager
 import { Table } from '../models/table';
 import { Player, PlayerAggregate } from '../models/player';
 import { CardAggregate } from '../models/card';
-import { AuthTokenManagerFactory } from '../modules/auth/auth_token_factory';
+import { AuthTokenManagerFactory } from '../modules/auth/auth_token';
 import url from 'url'
 
 class HomeController extends TableRule {

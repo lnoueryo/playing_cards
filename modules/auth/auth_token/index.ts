@@ -1,7 +1,7 @@
-import { Session, User } from './auth_token'
-import { CookieManager } from './cookie_manager'
-import { SessionManager, FileSessionManager, SessionManagerFactory } from './session_manager'
-import { JsonWebToken } from './auth_token'
+import { Session, User } from './session'
+import { JsonWebToken } from './json_web_token'
+import { CookieManager } from '../cookie_manager';
+import { AuthTokenManagerFactory } from './auth_token_factory';
 
 interface AuthToken {
     id: any
@@ -18,4 +18,4 @@ interface AuthToken {
     user_id: number;
 }
 
-export { Session, User, CookieManager, SessionManager, FileSessionManager, SessionManagerFactory, AuthToken, JsonWebToken }
+export { Session, User, CookieManager, AuthToken, JsonWebToken, AuthTokenManagerFactory }

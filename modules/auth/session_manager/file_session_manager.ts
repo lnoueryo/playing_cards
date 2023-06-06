@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { Session } from '../session';
+import { Session } from '../auth_token';
 import { SessionManager } from './session_manager';
 
 
