@@ -15,7 +15,7 @@ services:
       TOKEN_COOKIE_KEY: token
       DB_NAME: playing_cards
       DB_HOST: 172.16.0.2
-      DB_PASSWORD: password
+      DB_PASSWORD: popo6252
       DB_USER: "root"
       MONGO_DB_HOST: 172.16.0.6
       MONGO_DB_USER: root
