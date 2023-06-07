@@ -33,7 +33,7 @@ class User extends ModelBase implements User {
         return hashedPassword;
     }
 
-    async comparePassword(password: string): Promise<boolean> {
+    async isPasswordCorrect(password: string): Promise<boolean> {
         return await bcrypt.compare(password, this.password);
     }
 

@@ -18,7 +18,6 @@ class FileTableManager extends TableManager {
         this.TABLE_FILE_PATH = process.env.TABLE_FILE_PATH;
     }
 
-    // JSONファイルの読み取り
     async getTablesJson(): Promise<{[key: string]: TableJson}> {
         try {
             const tablesJson = await fsPromises.readFile(this.TABLE_FILE_PATH, 'utf8');
@@ -29,12 +28,22 @@ class FileTableManager extends TableManager {
         }
     }
 
-    // JSONファイルへの書き込み
+    async getTableJson(id: string): Promise<TableJson | undefined>  {
+        try {
+            const tablesJson = await this.getTablesJson();
+            if(this.tableNotExists(id, tablesJson)) return;
+            const tableJson = tablesJson[id]
+            return tableJson
+        } catch (err) {
+            console.error(`Error reading file from disk: ${err}`);
+            throw new Error(`Error reading file from disk: ${err}`)
+        }
+    }
+
     async createTableJson(table: Table): Promise<{[key: string]: TableJson}> {
         return this.updateTableJson(table)
     }
 
-    // JSONファイルへの書き込み
     async updateTableJson(table: Table): Promise<{[key: string]: TableJson}> {
         try {
             const tablesJson = await this.getTablesJson()
@@ -47,7 +56,6 @@ class FileTableManager extends TableManager {
         }
     }
 
-    // JSONファイルへの書き込み
     async deleteTableJson(table: Table): Promise<{[key: string]: TableJson}> {
         try {
             const tablesJson = await this.getTablesJson()

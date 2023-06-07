@@ -9,51 +9,57 @@ import { TableManagerFactory } from '../models/table/table_manager/table_manager
 class TableController extends TableRule {
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
-        const tm = TableManagerFactory.create()
-        const tablesJson = await tm.getTablesJson()
-        if(tm.tableNotExists(params.id, tablesJson) || !session.hasTableId() || !tm.isPlaying(session, tablesJson)) {
+
+        if(!session.hasTableId()) return config.server.redirect(res, '/');
+        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.table_id}`);
+
+        const table = await this.getTable(params.id)
+        if(!table) {
             session.deleteSession()
             return config.server.redirect(res, '/')
         }
-        const tableJson = tablesJson[params.id]
-        const table = Table.createTable(tableJson)
+
         if(table.isGameEndReached()) {
             const endGameTimer = this.endGameTimers.get(table.id)
             if(!endGameTimer) {
+                const tm = TableManagerFactory.create()
                 await tm.deleteTableJson(table)
                 return config.server.redirect(res, '/')
             }
         }
+
         return this.httpResponse(res, 'table.html')
     }
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
-        const tm = TableManagerFactory.create()
-        const tablesJson = await tm.getTablesJson()
-        if(tm.tableNotExists(params.id, tablesJson)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        const tableJson = tablesJson[params.id]
-        const table = Table.createTable(tableJson)
-        const responseJson: any = {table}
+        if(!session.hasTableId()) return config.server.redirect(res, '/');
+        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.table_id}`);
 
+        const table = await this.getTable(params.id)
+        if(!table) {
+            session.deleteSession()
+            return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        }
+
+        const responseJson: any = {table}
         const playerInTurn = table.getPlayerInTurn()
         const time = this.timers.get(playerInTurn.id)
-        if(time) {
-            responseJson[playerInTurn.id] = {time: {start: time.start, timeout: this.timeout}}
-        }
+        if(time) responseJson[playerInTurn.id] = {time: {start: time.start, timeout: this.timeout}}
 
         return this.jsonResponse(res, responseJson)
     }
 
     async next(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
 
-        const tm = TableManagerFactory.create()
-        const tablesJson = await tm.getTablesJson()
-        if(tm.tableNotExists(params.id, tablesJson)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        if(session.isNotMatchingTableId(params.id)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400); // 自分が所属しているテーブルかどうか
+        if(!session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(!session.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        const tableJson = tablesJson[params.id]
-        const table = Table.createTable(tableJson)
+        const table = await this.getTable(params.id)
+        if(!table) {
+            session.deleteSession()
+            return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        }
         if(session.user_id != table.getPlayerInTurn().id) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const cardJson = await this.getBody(req) as Card
@@ -65,25 +71,27 @@ class TableController extends TableRule {
 
     async exit(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
-        const tm = TableManagerFactory.create()
-        const tablesJson = await tm.getTablesJson()
-        if(tm.tableNotExists(params.id, tablesJson)) {
+        if(!session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(!session.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+
+        const table = await this.getTable(params.id)
+        if(!table) {
             const referer = req.headers.referer;
             if(!referer || !referer.includes('/table/')) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
             return config.server.redirect(res, '/')
         }
-        if(session.isNotMatchingTableId(params.id)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400); // 自分が所属しているテーブルかどうか
-        const tableJson = tablesJson[params.id]
-        const table = Table.createTable(tableJson)
+
         // ゲームが既に始まっている場合
         if(table.isMaxPlayersReached() && !table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        const tm = TableManagerFactory.create()
+        let newTablesJson;
         if(table.otherPlayersNotExist()) {
-            await tm.deleteTableJson(table)
+            newTablesJson = await tm.deleteTableJson(table)
         } else {
             const newTable = table.leaveTable(session.user_id)
-            await tm.updateTableJson(newTable)
+            newTablesJson = await tm.updateTableJson(newTable)
         }
-        const newTablesJson = await tm.getTablesJson()
+
         const tables = tm.toTables(newTablesJson)
         const newTableJson = newTablesJson[params.id]
 
@@ -94,22 +102,6 @@ class TableController extends TableRule {
         this.WSResponse({table: newTableJson}, wssTable)
 
         return config.server.redirect(res, '/')
-    }
-
-    async reset(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params?: { [key: string]: string }) {
-
-        const tm = TableManagerFactory.create()
-        const tablesJson = await tm.getTablesJson()
-        if(!params?.id || params.id in tablesJson == false) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
-        if(session.isNotMatchingTableId(params.id)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400)
-        const tableJson = tablesJson[params.id]
-        const table = Table.createTable(tableJson)
-        const nextGameStartTable = table.prepareNextGame().handOverCards().drawCard()
-        await tm.updateTableJson(nextGameStartTable)
-
-        const _wss = config.server.getWSConnections(table.playerAggregate.players.map((player) => player.id))
-        this.WSResponse({table: nextGameStartTable}, _wss)
-        return this.jsonResponse(res, nextGameStartTable)
     }
 
 }

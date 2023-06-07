@@ -34,7 +34,6 @@ const tokenRequiredRouteHandlers = {
     '/api/table/:id': tableController.show.bind(tableController),
   },
   'POST': {
-    '/api/table/:id/reset': tableController.reset.bind(tableController),
     '/api/table/:id/next': tableController.next.bind(tableController),
     '/api/table/:id/exit': tableController.exit.bind(tableController),
   }

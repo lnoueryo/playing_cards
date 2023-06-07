@@ -1,13 +1,15 @@
+import { AuthToken, BaseAuthToken } from "./base_auth_token";
 import { config } from "../../../main";
 import { CookieManager } from "../cookie_manager";
 import { User } from "./session";
 import jwt from 'jsonwebtoken';
 
 
-class JsonWebToken {
+class JsonWebToken extends BaseAuthToken implements AuthToken {
 
     readonly secretKey: string
-    constructor(readonly id: string, readonly cm: CookieManager, readonly user?: any, protected readonly expiresIn = '1h') {
+    constructor(readonly id: string, readonly cm: CookieManager, user?: any, protected readonly expiresIn = '1h') {
+        super(user)
         this.secretKey = config.secretKey
         this.id = id
     }
@@ -51,35 +53,7 @@ class JsonWebToken {
         const id = jwt.sign(user, config.secretKey, { expiresIn })
         return new JsonWebToken(id, cm, user);
     }
-    get table_id() {
-        return this.user.table_id
-    }
 
-    get user_name() {
-        return this.user.name
-    }
-
-    get user_id() {
-        return this.user.id
-    }
-
-    hasUser() {
-        return !!this.user
-    }
-
-    hasTableId() {
-        return !!this.user?.table_id
-    }
-
-    deleteTableId() {
-        const data = this.user;
-        if(data && 'tableId' in data) data.tableId = '';
-        // return new Session(this.id, data)
-    }
-
-    isNotMatchingTableId(table_id: string) {
-        return this.user.table_id != table_id;
-    }
 }
 
 export { JsonWebToken }

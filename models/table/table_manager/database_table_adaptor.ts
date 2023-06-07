@@ -24,6 +24,19 @@ class DatabaseTableAdaptor {
         }
     }
 
+    async getTableJson(id: string): Promise<{[key: string]: TableJson} | undefined> {
+        try {
+            const query = {id: id}
+            const _tableJson = await this.connection.getOne(query)
+            const tableJson: any = {}
+            tableJson[id] = _tableJson
+            return tableJson
+        } catch (err) {
+            console.error(`Error reading file from disk: ${err}`);
+            return;
+        }
+    }
+
     async createTableJson(table: Table): Promise<{[key: string]: TableJson}> {
         try {
             const tableJson: { [key: string]: TableJson; } = {}

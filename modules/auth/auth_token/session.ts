@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { SessionManager, SessionManagerFactory } from '../session_manager';
 import { CookieManager } from '../cookie_manager';
-import { AuthToken } from '..';
+import { AuthToken, BaseAuthToken } from './base_auth_token';
 
 type User = {
     'id': number,
@@ -12,12 +12,13 @@ type User = {
 }
 
 
-class Session implements AuthToken {
+class Session extends BaseAuthToken implements AuthToken {
 
     protected readonly manager: SessionManager
     readonly user: User
 
     constructor(readonly id: string, readonly cm: CookieManager, user?: any) {
+        super(user)
         this.manager = SessionManagerFactory.create()
         this.user = user;
     }
@@ -56,30 +57,6 @@ class Session implements AuthToken {
 
     static async createSession(user: User, sessionId: string, cm: CookieManager) {
         return new Session(sessionId, cm, user);
-    }
-
-    get user_id() {
-        return this.user.id;
-    }
-
-    get user_name() {
-        return this.user.name;
-    }
-
-    get table_id() {
-        return this.user?.table_id;
-    }
-
-    hasUser() {
-        return !!this.user
-    }
-
-    hasTableId() {
-        return !!this.table_id
-    }
-
-    isNotMatchingTableId(table_id: string) {
-        return this.user.table_id != table_id;
     }
 
 }

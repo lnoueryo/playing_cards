@@ -158,6 +158,21 @@ class TableRule extends Controller {
         this.timers.set(playerInTurn.id, {timer, start})
         this.WSResponse({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}}, wss)
     }
+
+    protected async getTables() {
+        const tm = TableManagerFactory.create()
+        const tableJson = await tm.getTablesJson()
+        return tm.toTables(tableJson)
+    }
+
+    protected async getTable(id: string) {
+
+        const tm = TableManagerFactory.create()
+        const tableJson = await tm.getTableJson(id)
+        if(!tableJson) return;
+        return Table.createTable(tableJson)
+    }
+
 }
 
 export { Controller, TableRule }

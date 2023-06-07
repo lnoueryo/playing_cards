@@ -17,7 +17,6 @@ class DatabaseTableManager extends TableManager {
         this.adaptor = new DatabaseTableAdaptor()
     }
 
-    // JSONファイルの読み取り
     async getTablesJson(): Promise<{[key: string]: TableJson}> {
         try {
             const tablesJson = await this.adaptor.getTablesJson()
@@ -28,7 +27,17 @@ class DatabaseTableManager extends TableManager {
         }
     }
 
-    // JSONファイルへの書き込み
+    async getTableJson(id: string): Promise<TableJson | undefined> {
+        try {
+            const tableJson = await this.adaptor.getTablesJson()
+            if(!tableJson[id]) return;
+            return tableJson[id]
+        } catch (err) {
+            console.error(`Error reading file from disk: ${err}`);
+            return;
+        }
+    }
+
     async createTableJson(table: Table): Promise<{[key: string]: TableJson}> {
         try {
             const tablesJson = await this.adaptor.createTableJson(table);
@@ -39,7 +48,6 @@ class DatabaseTableManager extends TableManager {
         }
     }
 
-    // JSONファイルへの書き込み
     async updateTableJson(table: Table): Promise<{[key: string]: TableJson}> {
         try {
             const tablesJson = await this.adaptor.updateTableJson(table);
@@ -50,7 +58,6 @@ class DatabaseTableManager extends TableManager {
         }
     }
 
-    // JSONファイルへの書き込み
     async deleteTableJson(table: Table) {
         try {
             const tablesJson = await this.adaptor.deleteTableJson(table);
