@@ -10,7 +10,7 @@
     "prod": "nodemon --exitcrash",
     "dev": "run-p dev:*",
     "build": "webpack",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,7 @@
     "@babel/core": "^7.21.8",
     "@babel/preset-env": "^7.21.5",
     "@types/bcrypt": "^5.0.0",
+    "@types/jest": "^29.5.2",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.16.0",
     "@types/uuid": "^9.0.1",
@@ -26,8 +27,10 @@
     "@vue/compiler-sfc": "^3.3.4",
     "babel-loader": "^9.1.2",
     "css-loader": "^6.7.3",
+    "jest": "^29.5.0",
     "nodemon": "^2.0.22",
     "style-loader": "^3.3.2",
+    "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
