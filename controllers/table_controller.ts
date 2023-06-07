@@ -60,7 +60,7 @@ class TableController extends TableRule {
             session.deleteSession()
             return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         }
-        if(session.user_id != table.getPlayerInTurn().id) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(session.user.user_id != table.getPlayerInTurn().id) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const cardJson = await this.getBody(req) as Card
         const card = CardBase.createCard(cardJson)
@@ -88,7 +88,7 @@ class TableController extends TableRule {
         if(table.otherPlayersNotExist()) {
             newTablesJson = await tm.deleteTableJson(table)
         } else {
-            const newTable = table.leaveTable(session.user_id)
+            const newTable = table.leaveTable(session.user.user_id)
             newTablesJson = await tm.updateTableJson(newTable)
         }
 

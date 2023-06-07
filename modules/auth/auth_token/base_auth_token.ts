@@ -16,8 +16,6 @@ interface IBaseAuthToken {
     isYourTable(params: {[key: string]: string}): boolean
     hasTableId(): boolean
     hasUser(): boolean
-    user_name: string;
-    user_id: number;
 }
 
 interface TokenUser {
@@ -54,11 +52,6 @@ class BaseAuthToken implements IBaseAuthToken {
     get user_id() {
         return this.user.user_id;
     }
-
-    get user_name() {
-        return this.user.name;
-    }
-
 
 }
 

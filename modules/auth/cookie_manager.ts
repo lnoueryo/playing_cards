@@ -1,5 +1,4 @@
 import http from 'http'
-import { Session } from './auth_token';
 
 
 class CookieManager {

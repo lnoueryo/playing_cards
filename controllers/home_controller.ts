@@ -39,7 +39,7 @@ class HomeController extends TableRule {
         const tm = TableManagerFactory.create()
         const tables = await this.getTables()
 
-        const player = new Player(session.user_id, session.user_name)
+        const player = new Player(session.user.user_id, session.user.name)
         const playerAggregate = new PlayerAggregate()
         const newPlayerAggregate = playerAggregate.addPlayer(player)
         const cardAggregate = CardAggregate.createNewCards();
@@ -67,7 +67,7 @@ class HomeController extends TableRule {
         if(!table) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(table.isMaxPlayersReached() || table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        const player = new Player(session.user_id, session.user_name)
+        const player = new Player(session.user.user_id, session.user.name)
         let addedPlayerTable = table.addPlayer(player)
 
         const wssTable = config.server.getWSConnections(table.getPlayerIds())

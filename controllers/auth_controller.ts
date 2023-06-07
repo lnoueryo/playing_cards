@@ -52,7 +52,7 @@ class LoginController extends Controller {
         } catch (error) {
             console.error('ログインエラー:', error);
             const response = { message: 'ログイン処理中にエラーが発生しました' };
-            return super.jsonResponse(res, response);
+            return super.jsonResponse(res, response, 500);
         }
     }
 

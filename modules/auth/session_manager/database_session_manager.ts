@@ -31,7 +31,7 @@ export class DatabaseSessionManager extends SessionManager {
     async createSession(session: Session) {
 
         const query = 'INSERT INTO sessions (`id`, `user_id`, `created_at`, `updated_at`) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)';
-        const params = [session.id, session.user_id]
+        const params = [session.id, session.user.user_id || session.user.id]
         try {
             const user = await this.connection.query(query, params)
             console.debug(user, 'createSession')
