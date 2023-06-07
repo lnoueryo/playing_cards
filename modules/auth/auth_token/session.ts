@@ -1,21 +1,15 @@
 import { v4 as uuidv4 } from 'uuid';
 import { SessionManager, SessionManagerFactory } from '../session_manager';
 import { CookieManager } from '../cookie_manager';
-import { AuthToken, BaseAuthToken } from './base_auth_token';
+import { AuthToken, BaseAuthToken, TokenUser } from './base_auth_token';
 
-type User = {
-    'id': number,
-    'name': string,
-    'email': string,
-    'password': string,
-    'table_id': string,
-}
+
 
 
 class Session extends BaseAuthToken implements AuthToken {
 
     protected readonly manager: SessionManager
-    readonly user: User
+    readonly user: TokenUser
 
     constructor(readonly id: string, readonly cm: CookieManager, user?: any) {
         super(user)
@@ -55,10 +49,10 @@ class Session extends BaseAuthToken implements AuthToken {
         return new Session(id, cm, user);
     }
 
-    static async createSession(user: User, sessionId: string, cm: CookieManager) {
+    static async createSession(user: TokenUser, sessionId: string, cm: CookieManager) {
         return new Session(sessionId, cm, user);
     }
 
 }
 
-export { Session, User }
+export { Session, TokenUser }

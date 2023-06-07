@@ -1,47 +1,46 @@
 import { CookieManager } from "../cookie_manager";
-import { Session, User } from "./session";
+import { Session } from "./session";
 
 
-interface AuthToken {
-    id: any
-    user?: any
+interface AuthToken extends IBaseAuthToken {
+    id: string
     getUser(session: Session): any;
     saveToStorage(cm: CookieManager): void;
     deleteSession(): void;
     createAuthToken(id: string): Promise<AuthToken>;
     updateTableId(id: string): Promise<AuthToken>
+}
+
+interface IBaseAuthToken {
+    user: any
     isYourTable(params: {[key: string]: string}): boolean
     hasTableId(): boolean
-    hasTableId(): boolean
     hasUser(): boolean
-    table_id: string;
     user_name: string;
     user_id: number;
 }
 
+interface TokenUser {
+    id: string
+    user_id: number
+    table_id: string | undefined
+    name: string
+    password: string
+    email: string
+    image: string
+}
 
-class BaseAuthToken {
 
-    readonly user: User
+class BaseAuthToken implements IBaseAuthToken {
+
+    readonly user: TokenUser
 
     constructor(user?: any) {
         this.user = user
     }
 
-    get user_id() {
-        return this.user.id;
-    }
-
-    get user_name() {
-        return this.user.name;
-    }
-
-    get table_id() {
-        return this.user?.table_id;
-    }
-
     isYourTable(params: { [key: string]: string }) {
-        return this.table_id == params.id
+        return this.user?.table_id == params.id
     }
 
     hasUser() {
@@ -49,9 +48,18 @@ class BaseAuthToken {
     }
 
     hasTableId() {
-        return !!this.table_id
+        return !!this.user?.table_id
     }
+
+    get user_id() {
+        return this.user.user_id;
+    }
+
+    get user_name() {
+        return this.user.name;
+    }
+
 
 }
 
-export { AuthToken, BaseAuthToken }
+export { AuthToken, BaseAuthToken, TokenUser }

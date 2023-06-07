@@ -11,7 +11,7 @@ class TableController extends TableRule {
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
 
         if(!session.hasTableId()) return config.server.redirect(res, '/');
-        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.table_id}`);
+        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.user.table_id}`);
 
         const table = await this.getTable(params.id)
         if(!table) {
@@ -34,7 +34,7 @@ class TableController extends TableRule {
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
         if(!session.hasTableId()) return config.server.redirect(res, '/');
-        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.table_id}`);
+        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.user.table_id}`);
 
         const table = await this.getTable(params.id)
         if(!table) {

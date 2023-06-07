@@ -16,11 +16,11 @@ class HomeController extends TableRule {
         const tm = TableManagerFactory.create()
         const tablesJson = await tm.getTablesJson()
         if(session.hasTableId()) {
-            if(tm.tableNotExists(session.table_id, tablesJson)) {
+            if(tm.tableNotExists(session.user.table_id, tablesJson)) {
                 // table_id削除
-                session = await session.updateTableId(session.table_id)
+                session = await session.updateTableId(session.user.table_id)
             } else {
-                return config.server.redirect(res, `/table/${session.table_id}`)
+                return config.server.redirect(res, `/table/${session.user.table_id}`)
             }
         }
 

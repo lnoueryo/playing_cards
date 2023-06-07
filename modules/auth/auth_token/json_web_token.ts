@@ -1,7 +1,6 @@
-import { AuthToken, BaseAuthToken } from "./base_auth_token";
+import { AuthToken, BaseAuthToken, TokenUser } from "./base_auth_token";
 import { config } from "../../../main";
 import { CookieManager } from "../cookie_manager";
-import { User } from "./session";
 import jwt from 'jsonwebtoken';
 
 
@@ -49,7 +48,7 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
         return new JsonWebToken(this.id, this.cm, user);
     }
 
-    static async createJsonWebToken(user: User, cm: CookieManager, expiresIn: string = '1h') {
+    static async createJsonWebToken(user: TokenUser, cm: CookieManager, expiresIn: string = '1h') {
         const id = jwt.sign(user, config.secretKey, { expiresIn })
         return new JsonWebToken(id, cm, user);
     }

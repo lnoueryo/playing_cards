@@ -46,7 +46,7 @@ export class DatabaseSessionManager extends SessionManager {
     async updateTableId(session: Session) {
 
         const query = 'UPDATE sessions SET table_id = ? WHERE id = ?';
-        const params = [session.table_id, session.id]
+        const params = [session.user.table_id, session.id]
         try {
             const user = await this.connection.query(query, params)
             if (user.length > 0) return user[0];
