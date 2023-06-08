@@ -23,3 +23,7 @@ $npx knex migrate:make remove_column_from_users
 ```
 $npx knex migrate:make drop_unique_from_table_id
 ```
+tsファイルを実行する
+```
+$npx ts-node ./node_modules/.bin/knex migrate:latest
+```

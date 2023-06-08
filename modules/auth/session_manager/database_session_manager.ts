@@ -1,8 +1,6 @@
-import fs from 'fs';
 import { Session } from '../auth_token';
 import { SessionManager } from './session_manager';
 import { Mysql } from '../../database/mysql';
-import { config } from '../../../main';
 
 
 export class DatabaseSessionManager extends SessionManager {

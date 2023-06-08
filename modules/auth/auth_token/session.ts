@@ -8,13 +8,8 @@ import { AuthToken, BaseAuthToken, TokenUser } from './base_auth_token';
 
 class Session extends BaseAuthToken implements AuthToken {
 
-    protected readonly manager: SessionManager
-    readonly user: TokenUser
-
-    constructor(readonly id: string, readonly cm: CookieManager, user: TokenUser, manager: SessionManager) {
+    constructor(readonly id: string, readonly cm: CookieManager, user: TokenUser, readonly manager: SessionManager) {
         super(user)
-        this.manager = manager
-        this.user = user;
     }
 
     async saveToStorage() {

@@ -1,7 +1,7 @@
 import mysql, { Pool  } from 'mysql2/promise';
 
 class Mysql {
-    private pool: Pool;
+    readonly pool: Pool;
     private readonly maxRetries: number = 3;
     private readonly backoff: number = 2;
     private readonly initialDelay: number = 500; // in milliseconds
@@ -36,6 +36,7 @@ class Mysql {
 
     async query(queryString: string, params: any[], retries: number = this.maxRetries): Promise<any> {
         try {
+            console.info(queryString, params)
             const [rows] = await this.pool.execute(queryString, params);
             return rows;
         } catch (error: any) {

@@ -49,9 +49,7 @@ class User extends ModelBase implements User {
 
     static async create(name: string, password: string, email: string, image: string): Promise<User> {
         const hashedPassword = await bcrypt.hash(password, 10);
-        console.log(name, password, email, image)
         const result = await config.DB.query('INSERT INTO users (name, password, email, image) VALUES (?, ?, ?, ?)', [name, hashedPassword, email, image || '']);
-        console.log(result)
         const id = result.insertId;
         return new User(id, name, hashedPassword, email, image);
     }
