@@ -1,5 +1,4 @@
 import { CookieManager } from "../cookie_manager";
-import { Session } from "./session";
 
 
 interface AuthToken extends IBaseAuthToken {
@@ -11,7 +10,7 @@ interface AuthToken extends IBaseAuthToken {
 }
 
 interface IBaseAuthToken {
-    user: any
+    user: TokenUser
     isYourTable(params: {[key: string]: string}): boolean
     hasTableId(): boolean
     hasUser(): boolean
@@ -20,7 +19,7 @@ interface IBaseAuthToken {
 interface TokenUser {
     id: string
     user_id: number
-    table_id: string | undefined
+    table_id: string
     name: string
     password: string
     email: string

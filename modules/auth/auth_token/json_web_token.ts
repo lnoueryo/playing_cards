@@ -8,7 +8,7 @@ const SECRET_KEY = process.env.SECRET_KEY || ''
 class JsonWebToken extends BaseAuthToken implements AuthToken {
 
     readonly secretKey: string
-    constructor(readonly id: string, readonly cm: CookieManager, user: any, protected readonly expiresIn = '1h') {
+    constructor(readonly id: string, readonly cm: CookieManager, user: TokenUser, protected readonly expiresIn = '1h') {
         super(user)
         this.secretKey = SECRET_KEY
         this.id = id
@@ -36,7 +36,7 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
 
     static async createAuthToken(id: string, cm: CookieManager) {
         const user = await this.getUser(id, SECRET_KEY);
-        return new JsonWebToken(id, cm, user);
+        return new JsonWebToken(id, cm, user as TokenUser);
     }
 
     static getUser(id: string, secretKey: string) {

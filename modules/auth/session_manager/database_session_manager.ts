@@ -9,9 +9,9 @@ export class DatabaseSessionManager extends SessionManager {
 
     readonly connection: Mysql
 
-    constructor() {
+    constructor(connection: Mysql) {
         super();
-        this.connection = config.DB
+        this.connection = connection
     }
 
     async getUser(id: string) {

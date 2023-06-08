@@ -11,7 +11,7 @@ class Session extends BaseAuthToken implements AuthToken {
     protected readonly manager: SessionManager
     readonly user: TokenUser
 
-    constructor(readonly id: string, readonly cm: CookieManager, user: any, manager: SessionManager) {
+    constructor(readonly id: string, readonly cm: CookieManager, user: TokenUser, manager: SessionManager) {
         super(user)
         this.manager = manager
         this.user = user;

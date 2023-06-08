@@ -82,7 +82,7 @@ class Server {
 
     if (req.method && pathname in this.routeHandlers[req.method]) {
       if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-      const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement));
+      const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement, config.DB));
       if (session.hasUser()) return this.backToPreviousPage(req, res);
     }
 
@@ -101,7 +101,7 @@ class Server {
       console.log(pathname)
     }
 
-    const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement));
+    const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement, config.DB));
 
     if(!session.hasUser()) {
       cmSession.expireCookie()
