@@ -2,28 +2,17 @@ import { AuthToken, BaseAuthToken, TokenUser } from "./base_auth_token";
 import { config } from "../../../main";
 import { CookieManager } from "../cookie_manager";
 import jwt from 'jsonwebtoken';
+require('dotenv').config();
 
+const SECRET_KEY = process.env.SECRET_KEY || ''
 
 class JsonWebToken extends BaseAuthToken implements AuthToken {
 
     readonly secretKey: string
-    constructor(readonly id: string, readonly cm: CookieManager, user?: any, protected readonly expiresIn = '1h') {
+    constructor(readonly id: string, readonly cm: CookieManager, user: any, protected readonly expiresIn = '1h') {
         super(user)
-        this.secretKey = config.secretKey
+        this.secretKey = SECRET_KEY
         this.id = id
-    }
-
-    getUser() {
-        try {
-            const decoded = jwt.verify(this.id, this.secretKey);
-            if (typeof decoded !== 'object') {
-                throw new Error('The payload of the token is expected to be an object.');
-            }
-            return decoded
-        } catch (error) {
-            console.error('JWT Verification Error:', error);
-            return null
-        }
     }
 
     saveToStorage() {
@@ -37,19 +26,32 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
     async updateTableId(id: string) {
         const user = JSON.parse(JSON.stringify(this.user));
         user['table_id'] = id
-        console.log(user['table_id'], 'table_id')
         const jwt = await JsonWebToken.createJsonWebToken(user, this.cm)
         jwt.cm.setValueToCookie(jwt.id)
         return jwt
     }
 
-    async createAuthToken() {
-        const user = await this.getUser();
-        return new JsonWebToken(this.id, this.cm, user);
+    static async createAuthToken(id: string, cm: CookieManager) {
+        const user = await this.getUser(id, SECRET_KEY);
+        return new JsonWebToken(id, cm, user);
+    }
+
+    static getUser(id: string, secretKey: string) {
+        try {
+            const decoded = jwt.verify(id, secretKey);
+            if (typeof decoded !== 'object') {
+                throw new Error('The payload of the token is expected to be an object.');
+            }
+            return decoded
+        } catch (error) {
+            console.error('JWT Verification Error:', error);
+            return null
+        }
     }
 
     static async createJsonWebToken(user: TokenUser, cm: CookieManager, expiresIn: string = '1h') {
-        const id = jwt.sign(user, config.secretKey, { expiresIn })
+
+        const id = jwt.sign(user, SECRET_KEY, { expiresIn })
         return new JsonWebToken(id, cm, user);
     }
 

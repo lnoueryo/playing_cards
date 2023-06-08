@@ -20,13 +20,13 @@ export class FileSessionManager extends SessionManager {
         return JSON.parse(usersStr);
     }
 
-    async getUser(session: Session) {
+    async getUser(id: string) {
         const users = await this.getUsers();
-        if(session.id in users == false) {
+        if(id in users == false) {
             console.warn('No user on session')
             return;
         }
-        return users[session.id];
+        return users[id];
     }
 
     createSession(session: Session) {

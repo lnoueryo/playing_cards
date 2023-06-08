@@ -27,12 +27,17 @@ const secretKey = process.env.SECRET_KEY || ''
 const sessionIdCookieKey = process.env.SESSION_ID_COOKIE_KEY || ''
 const tokenCookieKey = process.env.TOKEN_COOKIE_KEY || ''
 
+const tableToken = process.env.TABLE_TOKEN || ''
+const sessionManagement = process.env.SESSION_MANAGEMENT || ''
+
 const config = {
     server,
     DB,
     mongoDB,
     secretKey,
     sessionIdCookieKey,
-    tokenCookieKey
+    tokenCookieKey,
+    tableToken,
+    sessionManagement
 }
 export { config }

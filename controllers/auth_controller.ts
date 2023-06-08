@@ -1,6 +1,6 @@
 import http from 'http';
 import { Controller } from "./utils";
-import { Session, CookieManager, AuthToken } from '../modules/auth';
+import { Session, CookieManager, AuthToken, SessionManagerFactory } from '../modules/auth';
 import { User } from '../models/database';
 import { config } from '../main';
 
@@ -39,7 +39,7 @@ class LoginController extends Controller {
             const user = await User.findByEmail(email)
 
             if (user && await user.isPasswordCorrect(password)) {
-                const session = Session.createSessionId(user, new CookieManager(req, res, config.server.SESSION_ID_COOKIE_KEY))
+                const session = Session.createSessionId(user, new CookieManager(req, res, config.server.SESSION_ID_COOKIE_KEY), SessionManagerFactory.create(config.sessionManagement))
                 await session.saveToStorage()
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);

@@ -6,7 +6,7 @@ import * as WebSocket from 'ws';
 import { Session } from './modules/auth/auth_token';
 import { CookieManager } from './modules/auth/cookie_manager';
 import { routeHandlers, sessionRequiredRouteHandlers, tokenRequiredRouteHandlers } from './routes';
-import { AuthToken, JsonWebToken } from './modules/auth';
+import { AuthToken, JsonWebToken, SessionManagerFactory } from './modules/auth';
 import { config } from './main';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
@@ -82,7 +82,7 @@ class Server {
 
     if (req.method && pathname in this.routeHandlers[req.method]) {
       if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-      const session = await new Session(sessionId, new CookieManager(req, res, config.sessionIdCookieKey)).createAuthToken();
+      const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement));
       if (session.hasUser()) return this.backToPreviousPage(req, res);
     }
 
@@ -90,7 +90,7 @@ class Server {
 
     // セッションid認証
     if(token) {
-      const jwt = await new JsonWebToken(token, new CookieManager(req, res, config.tokenCookieKey)).createAuthToken();
+      const jwt = await JsonWebToken.createAuthToken(token, new CookieManager(req, res, config.tokenCookieKey));
       // 認証トークン
       if (req.method) {
         for (const pattern in this.tokenRequiredRouteHandlers[req.method]) {
@@ -101,7 +101,7 @@ class Server {
       console.log(pathname)
     }
 
-    const session = await new Session(sessionId, new CookieManager(req, res, config.sessionIdCookieKey)).createAuthToken();
+    const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement));
 
     if(!session.hasUser()) {
       cmSession.expireCookie()
@@ -115,7 +115,7 @@ class Server {
           if(params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params || {id: ''});
         }
         else {
-          const jwt = await new JsonWebToken(token, new CookieManager(req, res, config.tokenCookieKey)).createAuthToken();
+          const jwt = await JsonWebToken.createAuthToken(token, new CookieManager(req, res, config.tokenCookieKey));
           return this.redirect(res, `/table/${jwt.user.table_id}`)
         }
       }

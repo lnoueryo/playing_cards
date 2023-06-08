@@ -4,10 +4,8 @@ import { Session } from "./session";
 
 interface AuthToken extends IBaseAuthToken {
     id: string
-    getUser(session: Session): any;
     saveToStorage(cm: CookieManager): void;
     deleteSession(): void;
-    createAuthToken(id: string): Promise<AuthToken>;
     updateTableId(id: string): Promise<AuthToken>
 }
 
@@ -33,7 +31,7 @@ class BaseAuthToken implements IBaseAuthToken {
 
     readonly user: TokenUser
 
-    constructor(user?: any) {
+    constructor(user: any) {
         this.user = user
     }
 
@@ -47,10 +45,6 @@ class BaseAuthToken implements IBaseAuthToken {
 
     hasTableId() {
         return !!this.user?.table_id
-    }
-
-    get user_id() {
-        return this.user.user_id;
     }
 
 }

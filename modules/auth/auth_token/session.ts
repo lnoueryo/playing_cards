@@ -11,14 +11,10 @@ class Session extends BaseAuthToken implements AuthToken {
     protected readonly manager: SessionManager
     readonly user: TokenUser
 
-    constructor(readonly id: string, readonly cm: CookieManager, user?: any) {
+    constructor(readonly id: string, readonly cm: CookieManager, user: any, manager: SessionManager) {
         super(user)
-        this.manager = SessionManagerFactory.create()
+        this.manager = manager
         this.user = user;
-    }
-
-    async getUser() {
-        return await this.manager.getUser(this)
     }
 
     async saveToStorage() {
@@ -34,23 +30,27 @@ class Session extends BaseAuthToken implements AuthToken {
     async updateTableId(id: string) {
         const user = JSON.parse(JSON.stringify(this.user));
         user['table_id'] = id
-        const session = new Session(this.id, user)
+        const session = new Session(this.id, this.cm, user, this.manager)
         await this.manager.updateTableId(session)
         return session
     }
 
-    async createAuthToken() {
-        const user = await this.getUser();
-        return new Session(this.id, this.cm, user);
+    static async createAuthToken(id: string, cm: CookieManager, manager: SessionManager) {
+        const user = await this.getUser(id, manager);
+        return new Session(id, cm, user, manager);
     }
 
-    static createSessionId(user: any, cm: CookieManager): Session {
+    static async getUser(id: string, manager: SessionManager) {
+        return await manager.getUser(id)
+    }
+
+    static createSessionId(user: any, cm: CookieManager, manager: SessionManager): Session {
         const id = uuidv4();
-        return new Session(id, cm, user);
+        return new Session(id, cm, user, manager);
     }
 
-    static async createSession(user: TokenUser, sessionId: string, cm: CookieManager) {
-        return new Session(sessionId, cm, user);
+    static async createSession(user: TokenUser, sessionId: string, cm: CookieManager, manager: SessionManager) {
+        return new Session(sessionId, cm, user, manager);
     }
 
 }

@@ -1,6 +1,6 @@
 import http from 'http';
 import { TableRule } from "./utils";
-import { AuthToken } from '../modules/auth';
+import { AuthToken, SessionManagerFactory } from '../modules/auth';
 import { config } from '../main';
 import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
 import { Table } from '../models/table';
@@ -47,7 +47,7 @@ class HomeController extends TableRule {
         tables.push(table)
 
         // テーブル追加&&テーブルidセッションに追加
-        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res)
+        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement))
         await authToken.updateTableId(table.id)
         if(!res.getHeader('Set-Cookie')) throw new Error("token isn't set")
 
@@ -80,7 +80,7 @@ class HomeController extends TableRule {
         const tm = TableManagerFactory.create()
         const newTablesJson = await tm.updateTableJson(addedPlayerTable)
         const tables = tm.toTables(newTablesJson)
-        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res)
+        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement))
         await authToken.updateTableId(addedPlayerTable.id)
 
         const wssHome = config.server.getWSAllConnections()
