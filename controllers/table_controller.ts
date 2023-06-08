@@ -90,6 +90,7 @@ class TableController extends TableRule {
         } else {
             const newTable = table.leaveTable(session.user.user_id)
             newTablesJson = await tm.updateTableJson(newTable)
+            session.endGame()
         }
 
         const tables = tm.toTables(newTablesJson)

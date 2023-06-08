@@ -60,7 +60,9 @@ class DatabaseTableManager extends TableManager {
 
     async deleteTableJson(table: Table) {
         try {
-            const tablesJson = await this.adaptor.deleteTableJson(table);
+            await this.adaptor.deleteTableJson(table);
+            const tablesJson = await this.getTablesJson()
+            delete tablesJson[table.id]
             return tablesJson;
         } catch (err) {
             console.error(`Error writing file on disk: ${err}`);

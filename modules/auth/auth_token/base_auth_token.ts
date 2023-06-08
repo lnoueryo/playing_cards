@@ -5,7 +5,8 @@ import { Session } from "./session";
 interface AuthToken extends IBaseAuthToken {
     id: string
     saveToStorage(cm: CookieManager): void;
-    deleteSession(): void;
+    deleteSession(): void
+    endGame(): void;
     updateTableId(id: string): Promise<AuthToken>
 }
 

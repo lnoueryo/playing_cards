@@ -27,6 +27,8 @@ class Session extends BaseAuthToken implements AuthToken {
         this.cm.expireCookie()
     }
 
+    async endGame() {}
+
     async updateTableId(id: string) {
         const user = JSON.parse(JSON.stringify(this.user));
         user['table_id'] = id

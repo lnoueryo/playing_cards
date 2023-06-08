@@ -1,5 +1,4 @@
 import { AuthToken, BaseAuthToken, TokenUser } from "./base_auth_token";
-import { config } from "../../../main";
 import { CookieManager } from "../cookie_manager";
 import jwt from 'jsonwebtoken';
 require('dotenv').config();
@@ -21,6 +20,10 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
 
     async deleteSession() {
         this.cm.expireCookie()
+    }
+
+    async endGame() {
+        this.deleteSession()
     }
 
     async updateTableId(id: string) {
