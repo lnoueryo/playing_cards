@@ -13,7 +13,7 @@ class HomeController extends TableRule {
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         const tablesJson = await tm.getTablesJson()
         if(session.hasTableId()) {
             if(tm.tableNotExists(session.user.table_id, tablesJson)) {
@@ -36,7 +36,7 @@ class HomeController extends TableRule {
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         const {maxPlayers, maxRounds, maxGames} = await this.getBody(req) as Table
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         const tables = await this.getTables()
 
         const player = new Player(session.user.user_id, session.user.name)
@@ -77,7 +77,7 @@ class HomeController extends TableRule {
         }
         this.WSResponse({table: addedPlayerTable}, wssTable)
 
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         const newTablesJson = await tm.updateTableJson(addedPlayerTable)
         const tables = tm.toTables(newTablesJson)
         const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB))

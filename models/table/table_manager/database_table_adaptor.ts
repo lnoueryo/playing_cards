@@ -1,4 +1,3 @@
-import { config } from '../../../main'
 import { MongoDB } from '../../../modules/database/mongodb'
 import { Table } from '../table'
 import { TableJson } from './table_manager'
@@ -6,8 +5,8 @@ import { TableJson } from './table_manager'
 class DatabaseTableAdaptor {
 
     readonly connection: MongoDB
-    constructor() {
-        this.connection = config.mongoDB
+    constructor(connection: MongoDB) {
+        this.connection = connection
     }
 
     async getTablesJson(): Promise<{[key: string]: TableJson}> {

@@ -9,12 +9,10 @@ import { DatabaseTableAdaptor } from './database_table_adaptor';
 
 class DatabaseTableManager extends TableManager {
 
-    readonly connection: MongoDB
     readonly adaptor: DatabaseTableAdaptor
-    constructor() {
+    constructor(connection: MongoDB) {
         super();
-        this.connection = config.mongoDB
-        this.adaptor = new DatabaseTableAdaptor()
+        this.adaptor = new DatabaseTableAdaptor(connection)
     }
 
     async getTablesJson(): Promise<{[key: string]: TableJson}> {

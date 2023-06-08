@@ -102,7 +102,7 @@ class TableRule extends Controller {
         // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
             const endGameTable = discardedTable.endGame()
-            const tm = TableManagerFactory.create()
+            const tm = TableManagerFactory.create(config.mongoDB)
             const tablesJson = await tm.updateTableJson(endGameTable)
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
@@ -131,7 +131,7 @@ class TableRule extends Controller {
                 const preparedTable = table.prepareNextGame()
 
                 const nextGameStartTable = preparedTable.handOverCards().drawCard()
-                const tm = TableManagerFactory.create()
+                const tm = TableManagerFactory.create(config.mongoDB)
                 await tm.updateTableJson(nextGameStartTable)
                 this.WSResponse({table: nextGameStartTable}, wss)
             }, this.timeout)
@@ -140,7 +140,7 @@ class TableRule extends Controller {
 
         // 次のターン
         const drawCardTable = discardedTable.drawCard()
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         await tm.updateTableJson(drawCardTable)
         this.setTimer(drawCardTable, wss)
         return drawCardTable;
@@ -160,14 +160,14 @@ class TableRule extends Controller {
     }
 
     protected async getTables() {
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         const tableJson = await tm.getTablesJson()
         return tm.toTables(tableJson)
     }
 
     protected async getTable(id: string) {
 
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         const tableJson = await tm.getTableJson(id)
         if(!tableJson) return;
         return Table.createTable(tableJson)

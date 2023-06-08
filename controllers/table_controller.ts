@@ -22,7 +22,7 @@ class TableController extends TableRule {
         if(table.isGameEndReached()) {
             const endGameTimer = this.endGameTimers.get(table.id)
             if(!endGameTimer) {
-                const tm = TableManagerFactory.create()
+                const tm = TableManagerFactory.create(config.mongoDB)
                 await tm.deleteTableJson(table)
                 return config.server.redirect(res, '/')
             }
@@ -83,7 +83,7 @@ class TableController extends TableRule {
 
         // ゲームが既に始まっている場合
         if(table.isMaxPlayersReached() && !table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        const tm = TableManagerFactory.create()
+        const tm = TableManagerFactory.create(config.mongoDB)
         let newTablesJson;
         if(table.otherPlayersNotExist()) {
             newTablesJson = await tm.deleteTableJson(table)
