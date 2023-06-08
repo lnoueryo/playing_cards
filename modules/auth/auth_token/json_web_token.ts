@@ -1,16 +1,14 @@
 import { AuthToken, BaseAuthToken, TokenUser } from "./base_auth_token";
 import { CookieManager } from "../cookie_manager";
 import jwt from 'jsonwebtoken';
-require('dotenv').config();
 
-const SECRET_KEY = process.env.SECRET_KEY || ''
 
 class JsonWebToken extends BaseAuthToken implements AuthToken {
 
     readonly secretKey: string
-    constructor(readonly id: string, readonly cm: CookieManager, user: TokenUser, protected readonly expiresIn = '1h') {
+    constructor(readonly id: string, readonly cm: CookieManager, user: TokenUser, secretKey: string, protected readonly expiresIn = '1h') {
         super(user)
-        this.secretKey = SECRET_KEY
+        this.secretKey = secretKey
         this.id = id
     }
 
@@ -29,14 +27,15 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
     async updateTableId(id: string) {
         const user = JSON.parse(JSON.stringify(this.user));
         user['table_id'] = id
-        const jwt = await JsonWebToken.createJsonWebToken(user, this.cm)
+        const jwt = await JsonWebToken.createJsonWebToken(user, this.cm, this.secretKey)
         jwt.cm.setValueToCookie(jwt.id)
         return jwt
     }
 
-    static async createAuthToken(id: string, cm: CookieManager) {
-        const user = await this.getUser(id, SECRET_KEY);
-        return new JsonWebToken(id, cm, user as TokenUser);
+    static async createAuthToken(id: string, cm: CookieManager, secretKey: string) {
+        const user = await this.getUser(id, secretKey);
+        if(!user) return;
+        return new JsonWebToken(id, cm, user as TokenUser, secretKey);
     }
 
     static getUser(id: string, secretKey: string) {
@@ -52,10 +51,9 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
         }
     }
 
-    static async createJsonWebToken(user: TokenUser, cm: CookieManager, expiresIn: string = '1h') {
-
-        const id = jwt.sign(user, SECRET_KEY, { expiresIn })
-        return new JsonWebToken(id, cm, user);
+    static async createJsonWebToken(user: TokenUser, cm: CookieManager, secretKey: string, expiresIn: string = '1h') {
+        const id = jwt.sign(user, secretKey, { expiresIn })
+        return new JsonWebToken(id, cm, user, secretKey);
     }
 
 }

@@ -7,7 +7,7 @@ import { Table } from '../models/table';
 import { Player, PlayerAggregate } from '../models/player';
 import { CardAggregate } from '../models/card';
 import { AuthTokenManagerFactory } from '../modules/auth/auth_token';
-import url from 'url'
+
 
 class HomeController extends TableRule {
 
@@ -47,7 +47,7 @@ class HomeController extends TableRule {
         tables.push(table)
 
         // テーブル追加&&テーブルidセッションに追加
-        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB))
+        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB), config.secretKey)
         await authToken.updateTableId(table.id)
         if(!res.getHeader('Set-Cookie')) throw new Error("token isn't set")
 
@@ -80,7 +80,7 @@ class HomeController extends TableRule {
         const tm = TableManagerFactory.create(config.mongoDB)
         const newTablesJson = await tm.updateTableJson(addedPlayerTable)
         const tables = tm.toTables(newTablesJson)
-        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB))
+        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB), config.secretKey)
         await authToken.updateTableId(addedPlayerTable.id)
 
         const wssHome = config.server.getWSAllConnections()

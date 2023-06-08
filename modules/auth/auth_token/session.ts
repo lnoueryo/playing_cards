@@ -39,6 +39,7 @@ class Session extends BaseAuthToken implements AuthToken {
 
     static async createAuthToken(id: string, cm: CookieManager, manager: SessionManager) {
         const user = await this.getUser(id, manager);
+        if(!user) return;
         return new Session(id, cm, user, manager);
     }
 

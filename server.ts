@@ -82,15 +82,16 @@ class Server {
 
     if (req.method && pathname in this.routeHandlers[req.method]) {
       if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-      const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement, config.DB));
-      if (session.hasUser()) return this.backToPreviousPage(req, res);
+      const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(config.sessionManagement, config.DB));
+      if (session) return this.backToPreviousPage(req, res);
     }
 
     if(!sessionId) return this.redirect(res, '/login');
 
     // セッションid認証
     if(token) {
-      const jwt = await JsonWebToken.createAuthToken(token, new CookieManager(req, res, config.tokenCookieKey));
+      const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
+      if(!jwt) return this.redirect(res, '/')
       // 認証トークン
       if (req.method) {
         for (const pattern in this.tokenRequiredRouteHandlers[req.method]) {
@@ -98,12 +99,11 @@ class Server {
           if(params) return this.tokenRequiredRouteHandlers[req.method][pattern](req, res, jwt, params || {id: ''});
         }
       }
-      console.log(pathname)
     }
 
-    const session = await Session.createAuthToken(sessionId, new CookieManager(req, res, config.sessionIdCookieKey), SessionManagerFactory.create(config.sessionManagement, config.DB));
+    const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(config.sessionManagement, config.DB));
 
-    if(!session.hasUser()) {
+    if(!session) {
       cmSession.expireCookie()
       return this.redirect(res, '/login');
     }
@@ -115,8 +115,9 @@ class Server {
           if(params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params || {id: ''});
         }
         else {
-          const jwt = await JsonWebToken.createAuthToken(token, new CookieManager(req, res, config.tokenCookieKey));
-          return this.redirect(res, `/table/${jwt.user.table_id}`)
+          const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
+          if(jwt) return this.redirect(res, `/table/${jwt.user.table_id}`)
+          cmToken.expireCookie()
         }
       }
     }
