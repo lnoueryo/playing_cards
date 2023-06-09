@@ -3,11 +3,17 @@
   <button @click="createTable">作成</button>
     <button @click="logout()">ログアウト</button>
     <div v-for="(table, i) in tables" :key="i" style="width: 160px;height: 160px;border: solid 1px black">
+      プレイヤー数:{{table.maxPlayers}}
+      ラウンド数:{{table.maxRounds}}
+      ゲーム数:{{table.maxGames}}
       <div v-for="player in table.playerAggregate.players" :key="player.id">
         {{ player.id }}: {{ player.name }}
       </div>
       <button @click="joinTable(table)" :disabled="table.isMaxPlayersReached() || table.isGameEndReached()">参加</button>
     </div>
+    <input type="text" v-model="rules.maxPlayers">
+    <input type="text" v-model="rules.maxRounds">
+    <input type="text" v-model="rules.maxGames">
 </template>
 <script setup>
 import axios from 'axios';
@@ -20,18 +26,19 @@ const goToTable = (path) => {
 }
 const tables = ref([])
 const user = ref('')
-const table = {
-  "maxPlayers": 2,
+const rules = ref({
+  "maxPlayers": 3,
   "maxRounds": 4,
   "maxGames": 1,
-}
+})
 const fetchTables = async() => {
   const res = await axios.get('/api/table');
   tables.value = res.data.map(table => Table.createTable(table));
 }
 
 const createTable = async() => {
-  const res = await handleAsync(async() => await axios.post('/api/table/create', table));
+  console.log(rules.value)
+  const res = await handleAsync(async() => await axios.post('/api/table/create', rules.value));
   if(res.status == 200) return goToTable(res.data.id)
 }
 
