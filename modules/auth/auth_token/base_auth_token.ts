@@ -1,3 +1,4 @@
+import { Table } from "../../../models/table";
 import { CookieManager } from "../cookie_manager";
 
 
@@ -6,7 +7,9 @@ interface AuthToken extends IBaseAuthToken {
     saveToStorage(cm: CookieManager): void;
     deleteSession(): void
     endGame(): void;
-    updateTableId(id: string): Promise<AuthToken>
+    createTable(id: string): Promise<AuthToken>
+    deleteTable(id: string): Promise<AuthToken>
+    updateTable(table: Table): Promise<AuthToken>
 }
 
 interface IBaseAuthToken {

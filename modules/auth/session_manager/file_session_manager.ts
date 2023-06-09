@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { Session } from '../auth_token';
 import { SessionManager } from './session_manager';
+import { Table } from '../../../models/table';
 
 
 export class FileSessionManager extends SessionManager {
@@ -30,10 +31,10 @@ export class FileSessionManager extends SessionManager {
     }
 
     createSession(session: Session) {
-        this.updateTableId(session)
+        return this.createTable(session)
     }
 
-    async updateTableId(session: Session) {
+    async createTable(session: Session) {
         const users = await this.getUsers();
         users[session.id] = session.user;
         const data = JSON.stringify(users, null, 2);
@@ -41,7 +42,19 @@ export class FileSessionManager extends SessionManager {
         return users
     }
 
-    async deleteUser(session: Session) {
+    async updateTable(session: Session, table: Table) {
+        const users = await this.getUsers();
+        users[session.id] = session.user;
+        const data = JSON.stringify(users, null, 2);
+        await fs.writeFileSync(this.SESSION_FILE_PATH, data, 'utf8');
+        return users
+    }
+
+    async deleteTable(session: Session) {
+        return this.createTable(session)
+    }
+
+    async deleteSession(session: Session) {
         // JSONファイルからセッションデータを読み込む
         const users = await this.getUsers();
 

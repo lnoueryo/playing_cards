@@ -142,11 +142,11 @@ class TableRule extends Controller {
         const drawCardTable = discardedTable.drawCard()
         const tm = TableManagerFactory.create(config.mongoDB)
         await tm.updateTableJson(drawCardTable)
-        this.setTimer(drawCardTable, wss)
+        this.setTurnTimer(drawCardTable, wss)
         return drawCardTable;
     }
 
-    protected setTimer(table: Table, wss: (WebSocket.WebSocket | undefined)[]) {
+    protected setTurnTimer(table: Table, wss: (WebSocket.WebSocket | undefined)[]) {
 
         const playerInTurn = table.getPlayerInTurn()
         const start = Date.now(); // タイマー開始時刻を記録
