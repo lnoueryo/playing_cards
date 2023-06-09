@@ -1,21 +1,20 @@
 import http from 'http';
-import { Table } from "../models/table";
 import { TableRule } from "./utils";
-import { AuthToken } from '../modules/auth';
+import { AuthToken, CookieManager, Session, SessionManagerFactory } from '../modules/auth';
 import { config } from '../main';
 import { Card, CardBase } from '../models/card';
 import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
 
 class TableController extends TableRule {
 
-    async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
+    async index(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: { [key: string]: string } = {id: ''}) {
 
-        if(!session.hasTableId()) return config.server.redirect(res, '/');
-        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.user.table_id}`);
+        if(!token.hasTableId()) return config.server.redirect(res, '/');
+        if(!token.isYourTable(params)) return config.server.redirect(res, `/table/${token.user.table_id}`);
 
         const table = await this.getTable(params.id)
         if(!table) {
-            session.deleteSession()
+            token.deleteSession()
             return config.server.redirect(res, '/')
         }
 
@@ -31,14 +30,14 @@ class TableController extends TableRule {
         return this.httpResponse(res, 'table.html')
     }
 
-    async show(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: {[key: string]: string} = {id: ''}) {
+    async show(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
-        if(!session.hasTableId()) return config.server.redirect(res, '/');
-        if(!session.isYourTable(params)) return config.server.redirect(res, `/table/${session.user.table_id}`);
+        if(!token.hasTableId()) return config.server.redirect(res, '/');
+        if(!token.isYourTable(params)) return config.server.redirect(res, `/table/${token.user.table_id}`);
 
         const table = await this.getTable(params.id)
         if(!table) {
-            session.deleteSession()
+            token.deleteSession()
             return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         }
 
@@ -50,17 +49,17 @@ class TableController extends TableRule {
         return this.jsonResponse(res, responseJson)
     }
 
-    async next(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
+    async next(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: { [key: string]: string } = {id: ''}) {
 
-        if(!session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        if(!session.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(!token.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(!token.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const table = await this.getTable(params.id)
         if(!table) {
-            session.deleteSession()
+            token.deleteSession()
             return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         }
-        if(session.user.user_id != table.getPlayerInTurn().id) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(token.user.user_id != table.getPlayerInTurn().id) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const cardJson = await this.getBody(req) as Card
         const card = CardBase.createCard(cardJson)
@@ -69,10 +68,10 @@ class TableController extends TableRule {
         return this.jsonResponse(res, newTable);
     }
 
-    async exit(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: {[key: string]: string} = {id: ''}) {
+    async exit(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
-        if(!session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        if(!session.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(!token.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        if(!token.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const table = await this.getTable(params.id)
         if(!table) {
@@ -88,10 +87,14 @@ class TableController extends TableRule {
         if(table.otherPlayersNotExist()) {
             newTablesJson = await tm.deleteTableJson(table)
         } else {
-            const newTable = table.leaveTable(session.user.user_id)
+            const newTable = table.leaveTable(token.user.user_id)
             newTablesJson = await tm.updateTableJson(newTable)
-            session.endGame()
+            token.endGame()
         }
+        const cmSession = new CookieManager(req, res, config.sessionIdCookieKey)
+        const sessionId = cmSession.getCookieValue()
+        const session = new Session(sessionId, cmSession, token.user, SessionManagerFactory.create(config.sessionManagement, config.DB))
+        session.deleteTable()
 
         const tables = tm.toTables(newTablesJson)
         const newTableJson = newTablesJson[params.id]

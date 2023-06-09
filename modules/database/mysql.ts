@@ -30,7 +30,8 @@ class Mysql {
             database: this.database,
             waitForConnections: true,
             connectionLimit: 10,
-            queueLimit: 0
+            queueLimit: 0,
+            connectTimeout: 3000
         });
     }
 
@@ -47,6 +48,32 @@ class Mysql {
             console.error(`Query failed, retrying in ${delay}ms (${retries} retries left)...`);
             await this.sleep(delay);
             return this.query(queryString, params, retries - 1);
+        }
+    }
+
+    async transaction(handler: any, retries: number = this.maxRetries): Promise<any> {
+        // Start transaction
+        const connection = await this.pool.getConnection();
+        await connection.beginTransaction();
+        try {
+            const results = await handler(connection)
+            if(!results) {
+                await connection.rollback();
+                throw new Error('Something wrong')
+            }
+            await connection.commit();
+            return results;
+        } catch (error: any) {
+            await connection.rollback();
+            if (retries <= 0) {
+                throw new Error(`Failed to execute query after ${this.maxRetries} attempts: ${error.message}`);
+            }
+            console.log('An error has occurred, rolling back transaction:', error);
+            const delay = this.initialDelay * this.backoff ** (this.maxRetries - retries);
+            console.error(`Query failed, retrying in ${delay}ms (${retries} retries left)...`);
+            await this.sleep(delay);
+            return this.transaction(handler, retries - 1);
+            // If any query within the transaction fails, an error is thrown and we roll back the transaction
         }
     }
 

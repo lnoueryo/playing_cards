@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SessionManager, SessionManagerFactory } from '../session_manager';
 import { CookieManager } from '../cookie_manager';
 import { AuthToken, BaseAuthToken, TokenUser } from './base_auth_token';
+import { Table } from '../../../models/table';
 
 
 
@@ -18,18 +19,30 @@ class Session extends BaseAuthToken implements AuthToken {
     }
 
     async deleteSession() {
-        await this.manager.deleteUser(this)
+        await this.manager.deleteSession(this)
         this.cm.expireCookie()
     }
 
-    async endGame() {}
+    async endGame() {
+        // 全てRDBでゲームを管理するならtable_id削除の処理を書く
+    }
 
-    async updateTableId(id: string) {
+    async createTable(id: string) {
         const user = JSON.parse(JSON.stringify(this.user));
         user['table_id'] = id
         const session = new Session(this.id, this.cm, user, this.manager)
-        await this.manager.updateTableId(session)
-        return session
+        return await this.manager.createTable(session)
+    }
+
+    async deleteTable() {
+        return this.createTable('')
+    }
+
+    async updateTable(table: Table) {
+        const user = JSON.parse(JSON.stringify(this.user));
+        user['table_id'] = table.id
+        const session = new Session(this.id, this.cm, user, this.manager)
+        return await this.manager.updateTable(session, table)
     }
 
     static async createAuthToken(id: string, cm: CookieManager, manager: SessionManager) {

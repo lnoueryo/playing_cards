@@ -74,7 +74,7 @@ describe('JsonWebToken', () => {
 
     });
 
-    describe('updateTableId', () => {
+    describe('createTable', () => {
         it('should change token id and add table_id to user in JsonWebToken', async() => {
 
             const user = {
@@ -94,7 +94,7 @@ describe('JsonWebToken', () => {
 
             expect(token.user.table_id).toEqual('');
 
-            const newToken = await token.updateTableId(table_id)
+            const newToken = await token.createTable(table_id)
             expect(newToken.id).not.toEqual(id);
             expect(newToken.user.table_id).toEqual(table_id);
 

@@ -1,6 +1,7 @@
 import { AuthToken, BaseAuthToken, TokenUser } from "./base_auth_token";
 import { CookieManager } from "../cookie_manager";
 import jwt from 'jsonwebtoken';
+import { Table } from "../../../models/table";
 
 
 class JsonWebToken extends BaseAuthToken implements AuthToken {
@@ -24,7 +25,7 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
         this.deleteSession()
     }
 
-    async updateTableId(id: string) {
+    async createTable(id: string) {
         const user = JSON.parse(JSON.stringify(this.user));
         user['table_id'] = id
         const jwt = await JsonWebToken.createJsonWebToken(user, this.cm, this.secretKey)
@@ -32,18 +33,35 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
         return jwt
     }
 
+    async deleteTable(id: string) {
+        const user = JSON.parse(JSON.stringify(this.user));
+        user['table_id'] = id
+        const jwt = await JsonWebToken.createJsonWebToken(user, this.cm, this.secretKey)
+        jwt.cm.setValueToCookie(jwt.id)
+        return jwt
+    }
+
+    async updateTable(table: Table) {
+        const user = JSON.parse(JSON.stringify(this.user));
+        user['table_id'] = table.id
+        const jwt = await JsonWebToken.createJsonWebToken(user, this.cm, this.secretKey)
+        jwt.cm.setValueToCookie(jwt.id)
+        return jwt
+    }
+
     static async createAuthToken(id: string, cm: CookieManager, secretKey: string) {
         const user = await this.getUser(id, secretKey);
-        if(!user) return;
+        if(!user) {
+            cm.expireCookie();
+            return;
+        }
         return new JsonWebToken(id, cm, user as TokenUser, secretKey);
     }
 
     static getUser(id: string, secretKey: string) {
         try {
             const decoded = jwt.verify(id, secretKey);
-            if (typeof decoded !== 'object') {
-                throw new Error('The payload of the token is expected to be an object.');
-            }
+            if (typeof decoded !== 'object') throw new Error('The payload of the token is expected to be an object.');
             return decoded
         } catch (error) {
             console.error('JWT Verification Error:', error);
