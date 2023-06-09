@@ -111,6 +111,11 @@ class Table {
         return this.playerAggregate.getWinner()
     }
 
+    hideCards(id: number) {
+        const playerAggregate = this.playerAggregate.hideCards(id)
+        return new Table(this.cardAggregate, playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game, this.round, this.turn)
+    }
+
     isMaxPlayersReached() {
         return this.maxPlayers == this.playerAggregate.currentPlayerCount;
     }

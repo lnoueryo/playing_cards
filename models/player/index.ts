@@ -38,6 +38,11 @@ class Player {
         return this.hand.getRankName(lang)
     }
 
+    hideCards() {
+        const hand = this.hand.hideCards()
+        return new Player(this.id, this.name, hand)
+    }
+
     isWaiting() {
         return this.hand.isCorrectNumberCards();
     }

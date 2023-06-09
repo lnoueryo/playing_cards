@@ -12,9 +12,15 @@ class CardBase {
         this.type = type;
         this.number = number;
     }
+
     static createCard(card: Card) {
         return card["type"] === 4 ? new JorkerCard(card["number"]) : new RegularCard(card["type"], card["number"])
     }
+
+    hide() {
+        return new CardBase(0, 0, 0)
+    }
+
     convertToJson() {
         return {
             type: this.type,

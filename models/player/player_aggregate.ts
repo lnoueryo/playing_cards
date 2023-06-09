@@ -77,6 +77,14 @@ class PlayerAggregate {
         return new PlayerAggregate(newPlayers)
     }
 
+    hideCards(id: number) {
+        const players = this.players.map((player) => {
+            if(player.id == id) return player;
+            return player.hideCards()
+        })
+        return new PlayerAggregate(players)
+    }
+
     hasCompletedFullRound(turn: number) {
         return turn >= this.players.length;
     }

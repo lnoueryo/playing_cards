@@ -63,7 +63,7 @@ class HomeController extends TableRule {
 
         await tm.createTableJson(table)
         const wss = config.server.getWSAllConnections()
-        this.WSResponse({tables: tables}, wss)
+        this.WSTablesResponse({tables: tables}, wss)
         return this.jsonResponse(res, table)
 
     }
@@ -94,8 +94,8 @@ class HomeController extends TableRule {
             const tm = TableManagerFactory.create(config.mongoDB)
             const newTablesJson = await tm.updateTableJson(addedPlayerTable)
             const tables = tm.toTables(newTablesJson)
-            this.WSResponse({tables: tables}, wssHome)
-            this.WSResponse({table: addedPlayerTable}, wssTable)
+            this.WSTableResponse({table: addedPlayerTable}, wssTable)
+            this.WSTablesResponse({tables: tables}, wssHome)
             return this.jsonResponse(res, table)
         }
 
@@ -106,8 +106,8 @@ class HomeController extends TableRule {
         const tables = tm.toTables(newTablesJson)
 
         this.setTurnTimer(startedTable, wssTable)
-        this.WSResponse({table: startedTable}, wssTable)
-        this.WSResponse({tables: tables}, wssHome)
+        this.WSHidCardsTableResponse({table: startedTable}, wssTable)
+        this.WSTablesResponse({tables: tables}, wssHome)
 
         return this.jsonResponse(res, addedPlayerTable)
 

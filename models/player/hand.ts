@@ -32,6 +32,13 @@ class Hand {
         return this.ranking.getRankName(lang)
     }
 
+    hideCards() {
+        const cards = this.cards.map((card) => {
+            return card.hide()
+        })
+        return new Hand(cards, this.ranking)
+    }
+
     analyzeHand() {
         let bestHand = new Ranking(0, 0);
         if(this.hasNoCard()) return new Hand(this.cards, bestHand);

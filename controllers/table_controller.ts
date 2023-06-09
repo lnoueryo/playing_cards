@@ -40,9 +40,9 @@ class TableController extends TableRule {
             token.deleteSession()
             return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         }
-
-        const responseJson: any = {table}
-        const playerInTurn = table.getPlayerInTurn()
+        const hidCardsTable = table.hideCards(token.user.user_id)
+        const responseJson: any = {table: hidCardsTable}
+        const playerInTurn = hidCardsTable.getPlayerInTurn()
         const time = this.timers.get(playerInTurn.id)
         if(time) responseJson[playerInTurn.id] = {time: {start: time.start, timeout: this.timeout}}
 
@@ -100,10 +100,10 @@ class TableController extends TableRule {
         const newTableJson = newTablesJson[params.id]
 
         const wssHome = config.server.getWSAllConnections()
-        this.WSResponse({tables: tables}, wssHome)
+        this.WSTablesResponse({tables: tables}, wssHome)
 
         const wssTable = config.server.getWSConnections(table.getPlayerIds())
-        this.WSResponse({table: newTableJson}, wssTable)
+        this.WSTableResponse({table: newTableJson}, wssTable)
 
         return config.server.redirect(res, '/')
     }

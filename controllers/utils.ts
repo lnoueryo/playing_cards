@@ -53,7 +53,21 @@ class Controller {
         res.end(responseContent);
     }
 
-    protected WSResponse(table: {}, wss: (WebSocket.WebSocket | undefined)[]) {
+    protected WSTableResponse(table: {[key: string]: any}, wss: (WebSocket.WebSocket | undefined)[]) {
+        for(let ws of wss) {
+            ws?.send(JSON.stringify(table))
+        }
+    }
+
+    protected WSHidCardsTableResponse(table: {[key: string]: any}, wss: (WebSocket.WebSocket | undefined)[]) {
+        for(let ws of wss) {
+            const id = (ws as any).clientId;
+            const hidCardTable = {table: table['table'].hideCards(id)}
+            ws?.send(JSON.stringify(hidCardTable))
+        }
+    }
+
+    protected WSTablesResponse(table: {}, wss: (WebSocket.WebSocket | undefined)[]) {
         for(let ws of wss) {
             ws?.send(JSON.stringify(table))
         }
@@ -84,7 +98,7 @@ class Controller {
 class TableRule extends Controller {
 
     protected timers = new Map()
-    protected timeout = 6000
+    protected timeout = 30000
     protected endGameTimers = new Map()
     protected endGameTimeout = 20000
 
@@ -107,7 +121,7 @@ class TableRule extends Controller {
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
             })
-            this.WSResponse({table: endGameTable}, wss)
+            this.WSTableResponse({table: endGameTable}, wss)
 
             // ゲーム終了
             if(endGameTable.isGameEndReached()) {
@@ -115,11 +129,11 @@ class TableRule extends Controller {
                     await tm.deleteTableJson(endGameTable)
                     this.endGameTimers.delete(endGameTable.id)
                     const tablesJson = await tm.getTablesJson()
-                    this.WSResponse({table: ''}, wss)
+                    this.WSTableResponse({table: ''}, wss)
 
                     const wssHome = config.server.getWSAllConnections()
                     const tables = tm.toTables(tablesJson)
-                    super.WSResponse({tables: tables}, wssHome)
+                    super.WSTablesResponse({tables: tables}, wssHome)
                 }, this.endGameTimeout)
                 this.endGameTimers.set(endGameTable.id, endGameTimer)
                 return endGameTable
@@ -133,7 +147,7 @@ class TableRule extends Controller {
                 const nextGameStartTable = preparedTable.handOverCards().drawCard()
                 const tm = TableManagerFactory.create(config.mongoDB)
                 await tm.updateTableJson(nextGameStartTable)
-                this.WSResponse({table: nextGameStartTable}, wss)
+                this.WSTableResponse({table: nextGameStartTable}, wss)
             }, this.timeout)
             return endGameTable
         }
@@ -156,7 +170,7 @@ class TableRule extends Controller {
         }, this.timeout)
 
         this.timers.set(playerInTurn.id, {timer, start})
-        this.WSResponse({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}}, wss)
+        this.WSHidCardsTableResponse({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}}, wss)
     }
 
     protected async getTables() {
