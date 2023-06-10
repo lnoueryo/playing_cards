@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { config } from '../../../../knexfile';
+import { test } from '../../../../knexfile';
 import { DatabaseSessionManager } from '../../../../modules/auth/session_manager/database_session_manager';
 import { setupTestDB, teardownTestDB } from '../../../../__test_modules__/setup_test_db';
 import { Mysql } from '../../../../modules/database/mysql';
@@ -40,7 +40,8 @@ describe('Test suite', function () {
             return headers[name];
         }
     } as jest.Mocked<http.ServerResponse>
-    const { host, user, password, database } = config.test.connection
+
+    const { host, user, password, database } = test.connection
     const mysql = new Mysql(host, user, password, database)
     // beforeEach(() => {
     // });
@@ -57,7 +58,7 @@ describe('Test suite', function () {
 
     describe('createSessionId', function() {
         it('should pass the test', function () {
-            const { host, user, password, database } = config.test.connection
+            const { host, user, password, database } = test.connection
             const mysql = new Mysql(host, user, password, database)
             const cm = new CookieManager(mockRequest, mockResponse, 'sessionid')
             const dsm = new DatabaseSessionManager(mysql)

@@ -26,4 +26,22 @@ const config = {
   }
 };
 
-export { config }
+
+const test = {
+  client: 'mysql2',
+  connection: {
+    host: process.env.TEST_DB_HOST,
+    user: process.env.TEST_DB_USER,
+    password: process.env.TEST_DB_PASSWORD,
+    database: process.env.TEST_DB_NAME,
+  },
+  migrations: {
+    tableName: 'knex_migrations'
+  },
+}
+
+
+
+export { test }
+module.exports = config
+
