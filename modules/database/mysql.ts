@@ -74,6 +74,8 @@ class Mysql {
             await this.sleep(delay);
             return this.transaction(handler, retries - 1);
             // If any query within the transaction fails, an error is thrown and we roll back the transaction
+        } finally {
+            await connection.release()
         }
     }
 

@@ -2,6 +2,8 @@ import { Model } from "../utils";
 import { CardBase, CardAggregate } from '../card'
 import { Player, PlayerAggregate } from '../player';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthToken } from "../../modules/auth";
+import { Mysql } from "../../modules/database/mysql";
 
 class Table {
 
@@ -161,6 +163,51 @@ class Table {
         const playerAggregate = PlayerAggregate.createPlayers(playersJson)
 
         return new Table(cardAggregate, playerAggregate, maxPlayers, maxRounds, maxGames, id, game, round, turn);
+    }
+
+    async createTable(DB: Mysql,session: AuthToken) {
+        const handler = async(connection: any) => {
+            const result = await connection.query('INSERT INTO tables (id, max_players, max_rounds, max_games) VALUES (?, ?, ?, ?)', [this.id, this.maxPlayers, this.maxRounds, this.maxGames]) as any;
+            const _result = await connection.query('INSERT INTO tables_users (table_id, user_id) VALUES (?, ?)', [this.id, session.user.user_id]);
+            return _result
+        }
+        await DB.transaction(handler)
+    }
+
+    async updatePlayer(DB: Mysql, session: AuthToken) {
+        const handler = async(connection: any) => {
+            const [count] = await connection.execute('SELECT COUNT(*) as count FROM tables_users WHERE table_id = ? FOR UPDATE', [this.id]) as any
+            if(count[0].count == 0) return count;
+            if(count[0].count == this.maxPlayers) return count;
+            let result = await connection.query('INSERT INTO tables_users (table_id, user_id) VALUES (?, ?)', [this.id, session.user.user_id]);
+            if(this.isMaxPlayersReached()) result = await connection.query('UPDATE tables SET start = 1 WHERE id = ?', [this.id])
+            return result
+        }
+        await DB.transaction(handler)
+    }
+
+    async deleteTable(DB: Mysql, token: AuthToken) {
+        const handler = async(connection: any) => {
+            const tablesUsersParams = [this.id, token.user.user_id]
+            const tablesParams = [this.id]
+            const [tablesData] = await connection.execute(
+                'SELECT tu.*, t.start, t.active as table_active FROM tables_users tu LEFT JOIN tables t ON tu.table_id = t.id WHERE tu.table_id = ? AND tu.active = 1 FOR UPDATE',
+                tablesParams
+            );
+
+            if (tablesData[0].start) {
+                await connection.execute('UPDATE tables_users SET active = false WHERE table_id = ? AND user_id = ?', tablesUsersParams);
+                if (tablesData.length === 1) {
+                    await connection.execute('UPDATE tables SET active = false WHERE id = ?', tablesParams);
+                }
+            } else {
+                await connection.execute('DELETE FROM tables_users WHERE table_id = ? AND user_id = ?', tablesUsersParams);
+                if (tablesData.length === 1) await connection.execute('DELETE FROM tables WHERE id = ?', tablesParams);
+            }
+
+            return this
+        }
+        await DB.transaction(handler)
     }
 
     convertToJson(): TableJson {

@@ -7,6 +7,7 @@ import { config } from '../main';
 import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
 import { Table } from '../models/table';
 import { CardBase } from '../models/card';
+import { DatabaseReplayManager } from '../models/table/table_manager/database_replay_manager';
 
 class Controller {
 
@@ -55,14 +56,16 @@ class Controller {
 
     protected WSTableResponse(table: {[key: string]: any}, wss: (WebSocket.WebSocket | undefined)[]) {
         for(let ws of wss) {
+            console.log(table)
             ws?.send(JSON.stringify(table))
         }
     }
 
     protected WSHidCardsTableResponse(table: {[key: string]: any}, wss: (WebSocket.WebSocket | undefined)[]) {
         for(let ws of wss) {
+            const hidCardTable = JSON.parse(JSON.stringify(table))
             const id = (ws as any).clientId;
-            const hidCardTable = {table: table['table'].hideCards(id)}
+            hidCardTable.table = table['table'].hideCards(id)
             ws?.send(JSON.stringify(hidCardTable))
         }
     }
@@ -74,7 +77,7 @@ class Controller {
     }
     // getWSAllConnections
     protected async getBody(req: http.IncomingMessage) {
-        return new Promise<{}>((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             let body = '';
             req.on('readable', () => {
                 let chunk;
@@ -98,9 +101,9 @@ class Controller {
 class TableRule extends Controller {
 
     protected timers = new Map()
-    protected timeout = 30000
+    protected timeout = 5000
     protected endGameTimers = new Map()
-    protected endGameTimeout = 20000
+    protected endGameTimeout = 3000
 
     protected async discardAndDraw(table: Table, card: CardBase) {
 
@@ -116,8 +119,11 @@ class TableRule extends Controller {
         // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
             const endGameTable = discardedTable.endGame()
-            const tm = TableManagerFactory.create(config.mongoDB)
+
+            const tm = TableManagerFactory.create(config.mongoTable)
             const tablesJson = await tm.updateTableJson(endGameTable)
+            this.insertReplay(endGameTable)
+
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
             })
@@ -128,9 +134,10 @@ class TableRule extends Controller {
                 const endGameTimer = setTimeout(async() => {
                     await tm.deleteTableJson(endGameTable)
                     this.endGameTimers.delete(endGameTable.id)
-                    const tablesJson = await tm.getTablesJson()
-                    this.WSTableResponse({table: ''}, wss)
+                    const wssTable = config.server.getWSConnections(endGameTable.getPlayerIds())
+                    this.WSTableResponse({table: ''}, wssTable)
 
+                    const tablesJson = await tm.getTablesJson()
                     const wssHome = config.server.getWSAllConnections()
                     const tables = tm.toTables(tablesJson)
                     super.WSTablesResponse({tables: tables}, wssHome)
@@ -145,8 +152,11 @@ class TableRule extends Controller {
                 const preparedTable = table.prepareNextGame()
 
                 const nextGameStartTable = preparedTable.handOverCards().drawCard()
-                const tm = TableManagerFactory.create(config.mongoDB)
+
+                const tm = TableManagerFactory.create(config.mongoTable)
                 await tm.updateTableJson(nextGameStartTable)
+
+                this.insertReplay(nextGameStartTable)
                 this.WSTableResponse({table: nextGameStartTable}, wss)
             }, this.timeout)
             return endGameTable
@@ -154,8 +164,11 @@ class TableRule extends Controller {
 
         // 次のターン
         const drawCardTable = discardedTable.drawCard()
-        const tm = TableManagerFactory.create(config.mongoDB)
+
+        const tm = TableManagerFactory.create(config.mongoTable)
         await tm.updateTableJson(drawCardTable)
+        this.insertReplay(drawCardTable)
+
         this.setTurnTimer(drawCardTable, wss)
         return drawCardTable;
     }
@@ -170,21 +183,27 @@ class TableRule extends Controller {
         }, this.timeout)
 
         this.timers.set(playerInTurn.id, {timer, start})
+        console.log({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}})
         this.WSHidCardsTableResponse({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}}, wss)
     }
 
     protected async getTables() {
-        const tm = TableManagerFactory.create(config.mongoDB)
+        const tm = TableManagerFactory.create(config.mongoTable)
         const tableJson = await tm.getTablesJson()
         return tm.toTables(tableJson)
     }
 
     protected async getTable(id: string) {
 
-        const tm = TableManagerFactory.create(config.mongoDB)
+        const tm = TableManagerFactory.create(config.mongoTable)
         const tableJson = await tm.getTableJson(id)
         if(!tableJson) return;
         return Table.createTable(tableJson)
+    }
+
+    protected async insertReplay(table: Table) {
+        const drm = new DatabaseReplayManager(config.mongoReplay)
+        drm.createReplayTableJson(table)
     }
 
 }

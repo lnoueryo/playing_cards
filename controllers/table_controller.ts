@@ -21,7 +21,7 @@ class TableController extends TableRule {
         if(table.isGameEndReached()) {
             const endGameTimer = this.endGameTimers.get(table.id)
             if(!endGameTimer) {
-                const tm = TableManagerFactory.create(config.mongoDB)
+                const tm = TableManagerFactory.create(config.mongoTable)
                 await tm.deleteTableJson(table)
                 return config.server.redirect(res, '/')
             }
@@ -64,7 +64,6 @@ class TableController extends TableRule {
         const cardJson = await this.getBody(req) as Card
         const card = CardBase.createCard(cardJson)
         const newTable = await this.discardAndDraw(table, card)
-
         return this.jsonResponse(res, newTable);
     }
 
@@ -82,19 +81,21 @@ class TableController extends TableRule {
 
         // ゲームが既に始まっている場合
         if(table.isMaxPlayersReached() && !table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        const tm = TableManagerFactory.create(config.mongoDB)
+
+        await table.deleteTable(config.DB, token)
+
+
+        const tm = TableManagerFactory.create(config.mongoTable)
         let newTablesJson;
         if(table.otherPlayersNotExist()) {
             newTablesJson = await tm.deleteTableJson(table)
+            const timer = this.endGameTimers.get(table.id)
+            clearTimeout(timer)
         } else {
             const newTable = table.leaveTable(token.user.user_id)
             newTablesJson = await tm.updateTableJson(newTable)
             token.endGame()
         }
-        const cmSession = new CookieManager(req, res, config.sessionIdCookieKey)
-        const sessionId = cmSession.getCookieValue()
-        const session = new Session(sessionId, cmSession, token.user, SessionManagerFactory.create(config.sessionManagement, config.DB))
-        session.deleteTable()
 
         const tables = tm.toTables(newTablesJson)
         const newTableJson = newTablesJson[params.id]
@@ -105,6 +106,8 @@ class TableController extends TableRule {
         const wssTable = config.server.getWSConnections(table.getPlayerIds())
         this.WSTableResponse({table: newTableJson}, wssTable)
 
+        token.deleteSession()
+        console.log('redirect')
         return config.server.redirect(res, '/')
     }
 

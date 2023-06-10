@@ -25,11 +25,11 @@ class MongoDB {
         this.client.connect();
     }
 
-    async getAll() {
+    async getAll(query: {[key: string]: string | number} = {}) {
         try {
             const database = this.client.db(this.database); // Use the name of your database
             const collection = database.collection(this.collection); // Use the name of your collection
-            const documents = await collection.find({}).toArray();
+            const documents = await collection.find(query).toArray();
             return documents
             console.log(documents);
         } catch (error) {

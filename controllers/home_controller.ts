@@ -13,7 +13,7 @@ class HomeController extends TableRule {
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        const tm = TableManagerFactory.create(config.mongoDB)
+        const tm = TableManagerFactory.create(config.mongoTable)
         const tablesJson = await tm.getTablesJson()
 
         if(session.hasTableId()) {
@@ -43,7 +43,7 @@ class HomeController extends TableRule {
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         const {maxPlayers, maxRounds, maxGames} = await this.getBody(req) as Table
-        const tm = TableManagerFactory.create(config.mongoDB)
+        const tm = TableManagerFactory.create(config.mongoTable)
         const tables = await this.getTables()
 
         const player = new Player(session.user.user_id, session.user.name)
@@ -53,8 +53,7 @@ class HomeController extends TableRule {
         const table = new Table(cardAggregate, newPlayerAggregate, maxPlayers, maxRounds, maxGames);
         tables.push(table)
 
-        const newSession = await session.createTable(table.id)
-        if(!newSession) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        await table.createTable(config.DB, session)
 
         // テーブル追加&&テーブルidセッションに追加
         const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB), config.secretKey)
@@ -72,16 +71,15 @@ class HomeController extends TableRule {
 
         if(session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        const { table_id } = await this.getBody(req) as {table_id: string}
+        const { table_id } = await this.getBody(req)
         const table = await this.getTable(table_id)
         if(!table) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(table.isMaxPlayersReached() || table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
         const player = new Player(session.user.user_id, session.user.name)
-        let addedPlayerTable = table.addPlayer(player)
-        // sessionテーブルのtable_id更新
-        const newSession = await session.updateTable(addedPlayerTable)
-        if(!newSession) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        const addedPlayerTable = table.addPlayer(player)
+
+        await addedPlayerTable.updatePlayer(config.DB, session)
 
         // table_idが入ったJWTをクッキーにセット
         const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB), config.secretKey)
@@ -91,7 +89,7 @@ class HomeController extends TableRule {
         const wssTable = config.server.getWSConnections(table.getPlayerIds())
         if(!addedPlayerTable.isMaxPlayersReached()) {
             // MongoDBのテーブル情報更新
-            const tm = TableManagerFactory.create(config.mongoDB)
+            const tm = TableManagerFactory.create(config.mongoTable)
             const newTablesJson = await tm.updateTableJson(addedPlayerTable)
             const tables = tm.toTables(newTablesJson)
             this.WSTableResponse({table: addedPlayerTable}, wssTable)
@@ -101,8 +99,9 @@ class HomeController extends TableRule {
 
         // MongoDBのテーブル情報更新
         const startedTable = addedPlayerTable.start()
-        const tm = TableManagerFactory.create(config.mongoDB)
+        const tm = TableManagerFactory.create(config.mongoTable)
         const newTablesJson = await tm.updateTableJson(startedTable)
+        this.insertReplay(addedPlayerTable)
         const tables = tm.toTables(newTablesJson)
 
         this.setTurnTimer(startedTable, wssTable)
