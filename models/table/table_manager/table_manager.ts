@@ -1,4 +1,3 @@
-import { AuthToken } from '../../../modules/auth';
 import { Table } from '../index'
 
 abstract class TableManager {
@@ -40,7 +39,11 @@ interface TableJson {
                     "type": number,
                     "number": number,
                     "id": number
-                }[]
+                }[],
+                "ranking": {
+                    "rank": number,
+                    "highCard": number
+                }
             }
         }[]
     },
@@ -53,40 +56,5 @@ interface TableJson {
     "turn": number,
 }
 
-interface TablesJson {
-    "cardAggregate": {
-        "cards": {
-            "type": number,
-            "number": number,
-            "id": number
-        }[],
-        "discards": {
-            "type": number,
-            "number": number,
-            "id": number
-        }[]
-    },
-    "playerAggregate": {
-        "players": {
-            "id": number,
-            "name": string,
-            "hand": {
-                "cards": {
-                    "type": number,
-                    "number": number,
-                    "id": number
-                }[]
-            }
-        }[]
-    },
-    "maxPlayers": number,
-    "maxRounds": number,
-    "maxGames": number,
-    "id": string,
-    "game": number,
-    "round": number,
-    "turn": number,
-}[]
-
-
+interface TablesJson extends TableJson {}[]
 export { TableManager, TableJson, TablesJson }

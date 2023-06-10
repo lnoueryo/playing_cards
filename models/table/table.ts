@@ -201,7 +201,11 @@ interface TableJson {
                     "type": number,
                     "number": number,
                     "id": number
-                }[]
+                }[],
+                "ranking": {
+                    "rank": number,
+                    "highCard": number
+                }
             }
         }[]
     },
