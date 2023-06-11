@@ -89,6 +89,9 @@ class TableController extends TableRule {
         let newTablesJson;
         if(table.otherPlayersNotExist()) {
             newTablesJson = await tm.deleteTableJson(table)
+            // キュー削除
+            // config.rmqc.deleteQueue()
+
             const timer = this.endGameTimers.get(table.id)
             clearTimeout(timer)
         } else {

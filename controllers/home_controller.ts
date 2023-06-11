@@ -54,6 +54,7 @@ class HomeController extends TableRule {
         tables.push(table)
 
         await table.createTable(config.DB, session)
+        //　キュー挿入
 
         // テーブル追加&&テーブルidセッションに追加
         const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, config.tableToken, SessionManagerFactory.create(config.sessionManagement, config.DB), config.secretKey)

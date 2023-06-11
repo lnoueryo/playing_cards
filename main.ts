@@ -1,6 +1,8 @@
 import { Mysql } from './modules/database/mysql';
 import { MongoDB } from './modules/database/mongodb';
 import { Server } from './server'
+import { RabbitMQClient, RabbitMQServer } from './modules/database/rabbitmq';
+import { DatabaseReplayManager } from './models/table/table_manager/database_replay_manager';
 require('dotenv').config();
 
 const httpPort = 3100;
@@ -31,6 +33,10 @@ const tokenCookieKey = process.env.TOKEN_COOKIE_KEY || ''
 const tableToken = process.env.TABLE_TOKEN || ''
 const sessionManagement = process.env.SESSION_MANAGEMENT || ''
 
+const rabbit_host = process.env.RABBIT_HOST || ''
+const rmqc = RabbitMQClient.createChannel(rabbit_host)
+const rmqs = RabbitMQServer.createChannel(rabbit_host, new DatabaseReplayManager(mongoReplay))
+
 const config = {
     server,
     DB,
@@ -40,6 +46,8 @@ const config = {
     sessionIdCookieKey,
     tokenCookieKey,
     tableToken,
-    sessionManagement
+    sessionManagement,
+    rmqc,
+    rmqs
 }
 export { config }

@@ -105,6 +105,7 @@ class TableRule extends Controller {
     protected endGameTimers = new Map()
     protected endGameTimeout = 15000
     protected replay = false
+    protected replayConsumers = new Map()
 
     protected async discardAndDraw(table: Table, card: CardBase) {
 
@@ -142,6 +143,8 @@ class TableRule extends Controller {
                         await endGameTable.deleteTable(config.DB, id)
                     }
                     await tm.deleteTableJson(endGameTable)
+                    //　キュー削除
+
                     this.endGameTimers.delete(endGameTable.id)
                     const wssTable = config.server.getWSConnections(endGameTable.getPlayerIds())
                     this.WSTableResponse({table: ''}, wssTable)
@@ -214,6 +217,7 @@ class TableRule extends Controller {
         if(!this.replay) return;
         const drm = new DatabaseReplayManager(config.mongoReplay)
         drm.createReplayTableJson(table)
+        // config.rmqc.sendQueue(table)
     }
 
 }
