@@ -82,7 +82,7 @@ class TableController extends TableRule {
         // ゲームが既に始まっている場合
         if(table.isMaxPlayersReached() && !table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        await table.deleteTable(config.DB, token)
+        await table.deleteTable(config.DB, token.user.user_id)
 
 
         const tm = TableManagerFactory.create(config.mongoTable)
@@ -107,7 +107,6 @@ class TableController extends TableRule {
         this.WSTableResponse({table: newTableJson}, wssTable)
 
         token.deleteSession()
-        console.log('redirect')
         return config.server.redirect(res, '/')
     }
 

@@ -1,6 +1,7 @@
 <template>
 {{user}}
   <button @click="createTable">作成</button>
+  <button @click="goToReplay">リプレイ</button>
     <button @click="logout()">ログアウト</button>
     <div v-for="(table, i) in tables" :key="i" style="width: 160px;height: 160px;border: solid 1px black">
       プレイヤー数:{{table.maxPlayers}}
@@ -34,6 +35,10 @@ const rules = ref({
 const fetchTables = async() => {
   const res = await axios.get('/api/table');
   tables.value = res.data.map(table => Table.createTable(table));
+}
+
+const goToReplay = () => {
+  location.href = `/replay/${user.value.user_id}`
 }
 
 const createTable = async() => {

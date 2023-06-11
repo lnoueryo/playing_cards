@@ -101,7 +101,7 @@ class HomeController extends TableRule {
         const startedTable = addedPlayerTable.start()
         const tm = TableManagerFactory.create(config.mongoTable)
         const newTablesJson = await tm.updateTableJson(startedTable)
-        this.insertReplay(addedPlayerTable)
+        this.insertReplay(startedTable)
         const tables = tm.toTables(newTablesJson)
 
         this.setTurnTimer(startedTable, wssTable)

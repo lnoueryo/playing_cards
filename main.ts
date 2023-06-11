@@ -20,7 +20,7 @@ const mongo_password = process.env.MONGO_DB_PASSWORD
 const mongo_port = process.env.MONGO_DB_PORT
 const mongo_name = process.env.MONGO_DB_NAME
 const mongo_table_collection = process.env.MONGO_DB_TABLE_COLLECTION
-const mongo_replay_collection = process.env.MONGO_DB_TABLE_COLLECTION
+const mongo_replay_collection = process.env.MONGO_DB_REPLAY_COLLECTION
 const mongoTable = new MongoDB(mongo_host, mongo_user, mongo_password, mongo_port, mongo_name, mongo_table_collection)
 const mongoReplay = new MongoDB(mongo_host, mongo_user, mongo_password, mongo_port, mongo_name, mongo_replay_collection)
 

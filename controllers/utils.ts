@@ -101,9 +101,10 @@ class Controller {
 class TableRule extends Controller {
 
     protected timers = new Map()
-    protected timeout = 5000
+    protected timeout = 10000
     protected endGameTimers = new Map()
-    protected endGameTimeout = 3000
+    protected endGameTimeout = 15000
+    protected replay = false
 
     protected async discardAndDraw(table: Table, card: CardBase) {
 
@@ -122,7 +123,7 @@ class TableRule extends Controller {
 
             const tm = TableManagerFactory.create(config.mongoTable)
             const tablesJson = await tm.updateTableJson(endGameTable)
-            this.insertReplay(endGameTable)
+            await this.insertReplay(endGameTable)
 
             endGameTable.playerAggregate.players.forEach(player => {
                 console.log(player.hand)
@@ -132,6 +133,14 @@ class TableRule extends Controller {
             // ゲーム終了
             if(endGameTable.isGameEndReached()) {
                 const endGameTimer = setTimeout(async() => {
+                    const tm = TableManagerFactory.create(config.mongoTable)
+                    const tableJson = await tm.getTableJson(endGameTable.id)
+                    if(!tableJson) return endGameTable;
+                    const table = Table.createTable(tableJson)
+                    const ids = table.getPlayerIds()
+                    for(const id of ids) {
+                        await endGameTable.deleteTable(config.DB, id)
+                    }
                     await tm.deleteTableJson(endGameTable)
                     this.endGameTimers.delete(endGameTable.id)
                     const wssTable = config.server.getWSConnections(endGameTable.getPlayerIds())
@@ -156,7 +165,7 @@ class TableRule extends Controller {
                 const tm = TableManagerFactory.create(config.mongoTable)
                 await tm.updateTableJson(nextGameStartTable)
 
-                this.insertReplay(nextGameStartTable)
+                await this.insertReplay(nextGameStartTable)
                 this.WSTableResponse({table: nextGameStartTable}, wss)
             }, this.timeout)
             return endGameTable
@@ -167,7 +176,7 @@ class TableRule extends Controller {
 
         const tm = TableManagerFactory.create(config.mongoTable)
         await tm.updateTableJson(drawCardTable)
-        this.insertReplay(drawCardTable)
+        await this.insertReplay(drawCardTable)
 
         this.setTurnTimer(drawCardTable, wss)
         return drawCardTable;
@@ -202,6 +211,7 @@ class TableRule extends Controller {
     }
 
     protected async insertReplay(table: Table) {
+        if(!this.replay) return;
         const drm = new DatabaseReplayManager(config.mongoReplay)
         drm.createReplayTableJson(table)
     }

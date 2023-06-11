@@ -16,6 +16,7 @@ class Table {
     readonly game: number;
     readonly round: number;
     readonly turn: number;
+    protected createdAt = new Date()
 
     constructor(cardAggregate: CardAggregate, playerAggregate: PlayerAggregate, maxPlayers: number, maxRounds: number, maxGames: number, id: string = uuidv4(), game: number = 0, round: number = 0, turn: number = 0) {
         this.cardAggregate = cardAggregate;
@@ -91,14 +92,6 @@ class Table {
         if(this.playerAggregate.hasCompletedFullRound(turn)) return this.round + 1;
         return this.round;
     }
-
-    // determineWinner() {
-    //     const playerAggregate = this.playerAggregate.determineWinner()
-    //     playerAggregate.players.forEach((player) => {
-    //         console.log(player.hand.ranking.getRankName('jp'))
-    //     })
-    //     return new Table(this.cardAggregate, playerAggregate, this.maxPlayers, this.maxRounds, this.maxGames, this.id, this.game, this.round, this.turn);
-    // }
 
     leaveTable(id: number) {
         const playerAggregate = this.playerAggregate.leaveTable(id)
@@ -186,9 +179,9 @@ class Table {
         await DB.transaction(handler)
     }
 
-    async deleteTable(DB: Mysql, token: AuthToken) {
+    async deleteTable(DB: Mysql, user_id: number) {
         const handler = async(connection: any) => {
-            const tablesUsersParams = [this.id, token.user.user_id]
+            const tablesUsersParams = [this.id, user_id]
             const tablesParams = [this.id]
             const [tablesData] = await connection.execute(
                 'SELECT tu.*, t.start, t.active as table_active FROM tables_users tu LEFT JOIN tables t ON tu.table_id = t.id WHERE tu.table_id = ? AND tu.active = 1 FOR UPDATE',

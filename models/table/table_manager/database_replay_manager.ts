@@ -9,17 +9,13 @@ class DatabaseReplayManager {
         this.connection = connection
     }
 
-    async getUserTableJson(): Promise<{[key: string]: TableJson}> {
+    async getUserTableJson(query: {[key: string]: any} = {}): Promise<any[]> {
         try {
-            const tablesJson = await this.connection.getAll()
-            const tableJson: any = {}
-            tablesJson?.forEach(table => {
-                tableJson[table.id] = table;
-            })
-            return tableJson
+            const tablesJson = await this.connection.getAll(query) as any
+            return tablesJson
         } catch (err) {
             console.error(`Error reading file from disk: ${err}`);
-            return {};
+            return [];
         }
     }
 

@@ -1,7 +1,9 @@
 import { HomeController, LoginController, TableController } from "../controllers";
+import { ReplayController } from "../controllers/replay_controller";
 
 const tableController = new TableController()
 const homeController = new HomeController()
+const replayController = new ReplayController()
 const loginController = new LoginController()
 
 const routeHandlers = {
@@ -17,6 +19,10 @@ const routeHandlers = {
 const sessionRequiredRouteHandlers = {
   'GET': {
     '/': homeController.index.bind(homeController),
+    '/replay/:id': replayController.index.bind(replayController),
+    '/replay/:id/:table_id': replayController.show.bind(replayController),
+    '/api/replay/:id/table': replayController.tables.bind(replayController),
+    '/api/replay/:id/:table_id': replayController.table.bind(replayController),
     '/api/table': homeController.tables.bind(homeController),
     '/api/session': loginController.session.bind(loginController),
   },
