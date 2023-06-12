@@ -5,4 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-CMD ["ts-node", "main.ts"]
+# Copy your source files to the container
+COPY . .
+
+CMD ["npx", "ts-node", "main.ts"]

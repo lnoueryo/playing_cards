@@ -16,7 +16,7 @@ class RabbitMQServer {
 
     async createQueue(queue: string) {
         await this.channel.assertQueue(queue, { durable: false });
-        this.channel.consume(queue, (msg) => {
+        this.channel.consume(queue, (msg: any) => {
             if (msg !== null) {
                 let content = msg.content.toString();
                 let jsonMsg = JSON.parse(content);
