@@ -1,6 +1,6 @@
 import http from 'http';
 import { TableRule } from "./utils";
-import { AuthToken, CookieManager, Session, SessionManagerFactory } from '../modules/auth';
+import { AuthToken } from '../modules/auth';
 import { config } from '../main';
 import { Card, CardBase } from '../models/card';
 import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
@@ -9,21 +9,22 @@ class TableController extends TableRule {
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: { [key: string]: string } = {id: ''}) {
 
-        if(!token.hasTableId()) return config.server.redirect(res, '/');
-        if(!token.isYourTable(params)) return config.server.redirect(res, `/table/${token.user.table_id}`);
+        const cfg = await config;
+        if(!token.hasTableId()) return cfg.server.redirect(res, '/');
+        if(!token.isYourTable(params)) return cfg.server.redirect(res, `/table/${token.user.table_id}`);
 
         const table = await this.getTable(params.id)
         if(!table) {
             token.deleteSession()
-            return config.server.redirect(res, '/')
+            return cfg.server.redirect(res, '/')
         }
 
         if(table.isGameEndReached()) {
             const endGameTimer = this.endGameTimers.get(table.id)
             if(!endGameTimer) {
-                const tm = TableManagerFactory.create(config.mongoTable)
+                const tm = TableManagerFactory.create(cfg.mongoTable)
                 await tm.deleteTableJson(table)
-                return config.server.redirect(res, '/')
+                return cfg.server.redirect(res, '/')
             }
         }
 
@@ -32,8 +33,9 @@ class TableController extends TableRule {
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
-        if(!token.hasTableId()) return config.server.redirect(res, '/');
-        if(!token.isYourTable(params)) return config.server.redirect(res, `/table/${token.user.table_id}`);
+        const cfg = await config;
+        if(!token.hasTableId()) return cfg.server.redirect(res, '/');
+        if(!token.isYourTable(params)) return cfg.server.redirect(res, `/table/${token.user.table_id}`);
 
         const table = await this.getTable(params.id)
         if(!table) {
@@ -69,6 +71,7 @@ class TableController extends TableRule {
 
     async exit(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: {[key: string]: string} = {id: ''}) {
 
+        const cfg = await config;
         if(!token.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
         if(!token.isYourTable(params)) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
@@ -76,21 +79,21 @@ class TableController extends TableRule {
         if(!table) {
             const referer = req.headers.referer;
             if(!referer || !referer.includes('/table/')) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-            return config.server.redirect(res, '/')
+            return cfg.server.redirect(res, '/')
         }
 
         // ゲームが既に始まっている場合
         if(table.isMaxPlayersReached() && !table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        await table.deleteTable(config.DB, token.user.user_id)
+        await table.deleteTable(cfg.DB, token.user.user_id)
 
 
-        const tm = TableManagerFactory.create(config.mongoTable)
+        const tm = TableManagerFactory.create(cfg.mongoTable)
         let newTablesJson;
         if(table.otherPlayersNotExist()) {
             newTablesJson = await tm.deleteTableJson(table)
             // キュー削除
-            // config.rmqc.deleteQueue()
+            await cfg.rmqc.deleteQueue(table.id)
 
             const timer = this.endGameTimers.get(table.id)
             clearTimeout(timer)
@@ -103,14 +106,14 @@ class TableController extends TableRule {
         const tables = tm.toTables(newTablesJson)
         const newTableJson = newTablesJson[params.id]
 
-        const wssHome = config.server.getWSAllConnections()
+        const wssHome = cfg.server.getWSAllConnections()
         this.WSTablesResponse({tables: tables}, wssHome)
 
-        const wssTable = config.server.getWSConnections(table.getPlayerIds())
+        const wssTable = cfg.server.getWSConnections(table.getPlayerIds())
         this.WSTableResponse({table: newTableJson}, wssTable)
 
         token.deleteSession()
-        return config.server.redirect(res, '/')
+        return cfg.server.redirect(res, '/')
     }
 
 }

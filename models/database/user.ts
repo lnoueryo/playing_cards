@@ -38,7 +38,9 @@ class User extends ModelBase implements User {
     }
 
     static async findByEmail(email: string): Promise<User | null> {
-        const rows = await config.DB.query('SELECT * FROM users WHERE email = ?', [email]) as any
+
+        const cfg = await config;
+        const rows = await cfg.DB.query('SELECT * FROM users WHERE email = ?', [email]) as any
         if (!Array.isArray(rows) || rows.length === 0) {
           return null;
         }
@@ -48,19 +50,23 @@ class User extends ModelBase implements User {
     }
 
     static async create(name: string, password: string, email: string, image: string): Promise<User> {
+
+        const cfg = await config;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await config.DB.query('INSERT INTO users (name, password, email, image) VALUES (?, ?, ?, ?)', [name, hashedPassword, email, image || '']);
+        const result = await cfg.DB.query('INSERT INTO users (name, password, email, image) VALUES (?, ?, ?, ?)', [name, hashedPassword, email, image || '']);
         const id = result.insertId;
         return new User(id, name, hashedPassword, email, image);
     }
 
     async update(data: Partial<User>): Promise<User> {
+
+        const cfg = await config;
         // Update only the fields provided in `data`
         const entries = Object.entries(data);
         const updates = entries.map(([key, value]) => `${key} = ?`).join(', ');
         const values = entries.map(([_, value]) => value);
 
-        config.DB.query(`UPDATE users SET ${updates} WHERE id = ?`, [...values, this.id]);
+        cfg.DB.query(`UPDATE users SET ${updates} WHERE id = ?`, [...values, this.id]);
 
         // Create a new User instance with the updated data
         const updatedUser = { ...this, ...data };

@@ -9,9 +9,11 @@ import { SessionManager } from "../session_manager";
 class AuthTokenManagerFactory {
 
     static async create(user: TokenUser, sessionId: string, req: http.IncomingMessage, res: http.ServerResponse, tableToken: string, manager: SessionManager, secretKey: string ) {
+
+        const cfg = await config;
         if(!tableToken) throw new Error('TABLE_TOKEN is undefined')
-        if(tableToken == 'session') return Session.createSession(user, sessionId, new CookieManager(req, res, config.sessionIdCookieKey), manager)
-        else if(tableToken == 'jwt') return JsonWebToken.createJsonWebToken(user, new CookieManager(req, res, config.tokenCookieKey), secretKey)
+        if(tableToken == 'session') return Session.createSession(user, sessionId, new CookieManager(req, res, cfg.sessionIdCookieKey), manager)
+        else if(tableToken == 'jwt') return JsonWebToken.createJsonWebToken(user, new CookieManager(req, res, cfg.tokenCookieKey), secretKey)
         throw new Error('SESSION must be database or file')
     }
 }

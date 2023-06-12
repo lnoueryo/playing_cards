@@ -7,7 +7,6 @@ import { config } from '../main';
 import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
 import { Table } from '../models/table';
 import { CardBase } from '../models/card';
-import { DatabaseReplayManager } from '../models/table/table_manager/database_replay_manager';
 require('dotenv').config();
 
 
@@ -111,6 +110,7 @@ class TableRule extends Controller {
 
     protected async discardAndDraw(table: Table, card: CardBase) {
 
+        const cfg = await config
         const playerInTurnId = table.getPlayerInTurn().id
         const time = this.timers.get(playerInTurnId);
         if(time) {
@@ -119,12 +119,12 @@ class TableRule extends Controller {
         }
         const discardedTable = table.discard(card)
 
-        const wss = config.server.getWSConnections(discardedTable.getPlayerIds())
+        const wss = cfg.server.getWSConnections(discardedTable.getPlayerIds())
         // 次のゲーム
         if(discardedTable.isGameEndRoundReached()) {
             const endGameTable = discardedTable.endGame()
 
-            const tm = TableManagerFactory.create(config.mongoTable)
+            const tm = TableManagerFactory.create(cfg.mongoTable)
             const tablesJson = await tm.updateTableJson(endGameTable)
             await this.insertReplay(endGameTable)
 
@@ -136,23 +136,23 @@ class TableRule extends Controller {
             // ゲーム終了
             if(endGameTable.isGameEndReached()) {
                 const endGameTimer = setTimeout(async() => {
-                    const tm = TableManagerFactory.create(config.mongoTable)
+                    const tm = TableManagerFactory.create(cfg.mongoTable)
                     const tableJson = await tm.getTableJson(endGameTable.id)
                     if(!tableJson) return endGameTable;
                     const table = Table.createTable(tableJson)
                     const ids = table.getPlayerIds()
                     for(const id of ids) {
-                        await endGameTable.deleteTable(config.DB, id)
+                        await endGameTable.deleteTable(cfg.DB, id)
                     }
                     await tm.deleteTableJson(endGameTable)
                     //　キュー削除
 
                     this.endGameTimers.delete(endGameTable.id)
-                    const wssTable = config.server.getWSConnections(endGameTable.getPlayerIds())
+                    const wssTable = cfg.server.getWSConnections(endGameTable.getPlayerIds())
                     this.WSTableResponse({table: ''}, wssTable)
 
                     const tablesJson = await tm.getTablesJson()
-                    const wssHome = config.server.getWSAllConnections()
+                    const wssHome = cfg.server.getWSAllConnections()
                     const tables = tm.toTables(tablesJson)
                     super.WSTablesResponse({tables: tables}, wssHome)
                 }, this.endGameTimeout)
@@ -167,7 +167,7 @@ class TableRule extends Controller {
 
                 const nextGameStartTable = preparedTable.handOverCards().drawCard()
 
-                const tm = TableManagerFactory.create(config.mongoTable)
+                const tm = TableManagerFactory.create(cfg.mongoTable)
                 await tm.updateTableJson(nextGameStartTable)
 
                 await this.insertReplay(nextGameStartTable)
@@ -179,7 +179,7 @@ class TableRule extends Controller {
         // 次のターン
         const drawCardTable = discardedTable.drawCard()
 
-        const tm = TableManagerFactory.create(config.mongoTable)
+        const tm = TableManagerFactory.create(cfg.mongoTable)
         await tm.updateTableJson(drawCardTable)
         await this.insertReplay(drawCardTable)
 
@@ -202,24 +202,28 @@ class TableRule extends Controller {
     }
 
     protected async getTables() {
-        const tm = TableManagerFactory.create(config.mongoTable)
+
+        const cfg = await config
+        const tm = TableManagerFactory.create(cfg.mongoTable)
         const tableJson = await tm.getTablesJson()
         return tm.toTables(tableJson)
     }
 
     protected async getTable(id: string) {
 
-        const tm = TableManagerFactory.create(config.mongoTable)
+        const cfg = await config
+        const tm = TableManagerFactory.create(cfg.mongoTable)
         const tableJson = await tm.getTableJson(id)
         if(!tableJson) return;
         return Table.createTable(tableJson)
     }
 
     protected async insertReplay(table: Table) {
+
+        const cfg = await config
         if(!this.replay) return;
-        const drm = new DatabaseReplayManager(config.mongoReplay)
-        drm.createReplayTableJson(table)
-        // config.rmqc.sendQueue(table)
+        console.log(table)
+        cfg.rmqc.sendQueue(table)
     }
 
 }

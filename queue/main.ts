@@ -17,11 +17,10 @@ const main = async() => {
     const rms = await RabbitMQServer.createChannel(host, mongoReplay)
     const server = http.createServer(async(req: IncomingMessage, res: ServerResponse) => {
         try {
-            const table_id = await getBody(req)
-            await rms.createQueue(table_id)
-            res.on('finish', () => {
-                res.end('OK') // レスポンスボディが「OK」になる
-            });
+            const body = await getBody(req)
+            await rms.createQueue(body.table_id)
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('OK') // レスポンスボディが「OK」になる
         } catch (error) {
             console.log(error)
             res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -46,6 +45,7 @@ const getBody = async (req: http.IncomingMessage) => {
         });
 
         req.on('end', () => {
+            console.log(body)
             resolve(JSON.parse(body));
         });
 

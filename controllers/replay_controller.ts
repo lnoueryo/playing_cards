@@ -2,11 +2,6 @@ import http from 'http';
 import { TableRule } from "./utils";
 import { AuthToken, SessionManagerFactory } from '../modules/auth';
 import { config } from '../main';
-import { TableManagerFactory } from '../models/table/table_manager/table_manager_factory';
-import { Table } from '../models/table';
-import { Player, PlayerAggregate } from '../models/player';
-import { CardAggregate } from '../models/card';
-import { AuthTokenManagerFactory } from '../modules/auth/auth_token';
 import { DatabaseReplayManager } from '../models/table/table_manager/database_replay_manager';
 
 
@@ -18,7 +13,8 @@ class ReplayController extends TableRule {
     }
 
     async tables(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
-        const tables = await config.DB.query(`
+        const cfg = await config;
+        const tables = await cfg.DB.query(`
         SELECT
             tu.user_id,
             t.*,
@@ -46,7 +42,9 @@ class ReplayController extends TableRule {
     }
 
     async table(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: '', table_id: ''}) {
-        const drm = await new DatabaseReplayManager(config.mongoReplay)
+
+        const cfg = await config;
+        const drm = await new DatabaseReplayManager(cfg.mongoReplay)
         const table = await drm.getUserTableJson({id: params.table_id})
         console.log(table)
         return this.jsonResponse(res, table)

@@ -69,6 +69,7 @@ class Server {
   }
 
   async routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
+    const cfg = await config;
     const requestUrl = url.parse(req.url || '', true);
     const pathname = requestUrl.pathname || '/';
     // 静的ファイルへのリクエストに対する処理
@@ -82,7 +83,7 @@ class Server {
 
     if (req.method && pathname in this.routeHandlers[req.method]) {
       if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-      const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(config.sessionManagement, config.DB));
+      const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB));
       if (session) return this.backToPreviousPage(req, res);
     }
 
@@ -101,7 +102,7 @@ class Server {
       }
     }
 
-    const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(config.sessionManagement, config.DB));
+    const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB));
 
     if(!session) {
       cmSession.expireCookie()

@@ -28,6 +28,9 @@ services:
       TABLE: ${TABLE}
       TABLE_TOKEN: ${TABLE_TOKEN}
       REPLAY: ${REPLAY}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      PLAYING_CARDS_CONSUMER_HOST: ${PLAYING_CARDS_CONSUMER_HOST}
+      PLAYING_CARDS_CONSUMER_PORT: ${PLAYING_CARDS_CONSUMER_PORT}
       CHOKIDAR_USEPOLLING: true
       NODE_OPTIONS: --max_old_space_size=8192
     volumes:
@@ -37,7 +40,7 @@ services:
     # command: npm run dev
     networks:
       shared_network:
-        ipv4_address: 172.16.0.10
+        ipv4_address: ${PLAYING_CARDS_HOST}
 
   playing_cards_consumer:
     image: playing_cards_consumer
@@ -61,7 +64,7 @@ services:
     tty: true
     networks:
       shared_network:
-        ipv4_address: 172.16.0.7
+        ipv4_address: ${PLAYING_CARDS_CONSUMER_HOST}
 
 networks:
   shared_network:

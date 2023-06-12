@@ -33,13 +33,14 @@ class LoginController extends Controller {
 
     async login(req: http.IncomingMessage, res: http.ServerResponse) {
 
+        const cfg = await config;
         try {
             // リクエストのボディからemailとpasswordを取得
             const { email, password } = await this.getBody(req) as {email: string, password: string};
             const user = await User.findByEmail(email)
 
             if (user && await user.isPasswordCorrect(password)) {
-                const session = Session.createSessionId(user, new CookieManager(req, res, config.server.SESSION_ID_COOKIE_KEY), SessionManagerFactory.create(config.sessionManagement, config.DB))
+                const session = Session.createSessionId(user, new CookieManager(req, res, cfg.server.SESSION_ID_COOKIE_KEY), SessionManagerFactory.create(cfg.sessionManagement, cfg.DB))
                 await session.saveToStorage()
                 const response = { message: 'ログインに成功しました', user };
                 return super.jsonResponse(res, response);
