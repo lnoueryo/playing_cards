@@ -22,7 +22,7 @@ const main = async() => {
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end('OK') // レスポンスボディが「OK」になる
         } catch (error) {
-            console.log(error)
+            console.error(error)
             res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('Error: Not Found');
         }
@@ -45,7 +45,6 @@ const getBody = async (req: http.IncomingMessage) => {
         });
 
         req.on('end', () => {
-            console.log(body)
             resolve(JSON.parse(body));
         });
 

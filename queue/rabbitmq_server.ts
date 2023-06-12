@@ -21,7 +21,6 @@ class RabbitMQServer {
                 let content = msg.content.toString();
                 let jsonMsg = JSON.parse(content);
                 this.mongodb.insertOne(jsonMsg)
-                console.log(`Received: ${jsonMsg}`);
                 this.channel.ack(msg);
             }
         });

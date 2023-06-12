@@ -113,8 +113,6 @@ class PlayerAggregate {
         return this.players.reduce((prev, current) => {
             const currentRank = current.analyzeHand().getRank()
             const prevRank = prev.analyzeHand().getRank()
-            console.log(currentRank)
-            console.log(prevRank)
             if (currentRank.rank > prevRank.rank) return current;
             else if (currentRank.rank === prevRank.rank) return currentRank.highCard > prevRank.highCard ? current : prev;
             return prev;

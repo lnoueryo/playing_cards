@@ -8,7 +8,7 @@ const main = async() => {
     const httpPort = 3100;
     
     const server = new Server(httpPort);
-    server.startHTTPServer();
+    await server.startHTTPServer();
     
     const host = process.env.DB_HOST
     const user = process.env.DB_USER

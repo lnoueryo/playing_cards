@@ -8,8 +8,14 @@ import { config } from '../main';
 class LoginController extends Controller {
 
     index(req: http.IncomingMessage, res: http.ServerResponse) {
-
-        return super.httpResponse(res, 'login.html')
+        try {
+            
+            return super.httpResponse(res, 'login.html')
+        } catch (error) {
+            console.error(error)
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Error: Not Found');
+        }
     }
 
     async create(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -34,39 +40,24 @@ class LoginController extends Controller {
     async login(req: http.IncomingMessage, res: http.ServerResponse) {
 
         const cfg = await config;
-        try {
-            // リクエストのボディからemailとpasswordを取得
-            const { email, password } = await this.getBody(req) as {email: string, password: string};
-            const user = await User.findByEmail(email)
+        // リクエストのボディからemailとpasswordを取得
+        const { email, password } = await this.getBody(req) as {email: string, password: string};
+        const user = await User.findByEmail(email)
 
-            if (user && await user.isPasswordCorrect(password)) {
-                const session = Session.createSessionId(user, new CookieManager(req, res, cfg.server.SESSION_ID_COOKIE_KEY), SessionManagerFactory.create(cfg.sessionManagement, cfg.DB))
-                await session.saveToStorage()
-                const response = { message: 'ログインに成功しました', user };
-                return super.jsonResponse(res, response);
-            }
-
-            console.warn('failed to log in')
-            const response = { message: 'ログインに失敗しました' };
-            return super.jsonResponse(res, response, 401);
-
-        } catch (error) {
-            console.error('ログインエラー:', error);
-            const response = { message: 'ログイン処理中にエラーが発生しました' };
-            return super.jsonResponse(res, response, 500);
+        if (user && await user.isPasswordCorrect(password)) {
+            const session = Session.createSessionId(user, new CookieManager(req, res, cfg.server.SESSION_ID_COOKIE_KEY), SessionManagerFactory.create(cfg.sessionManagement, cfg.DB))
+            await session.saveToStorage()
+            return super.jsonResponse(res, { message: 'ログインに成功しました', user });
         }
+
+        console.warn('failed to log in')
+        return super.jsonResponse(res, { message: 'ログインに失敗しました' }, 401);
     }
 
     async logout(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        try {
-            await session.deleteSession()
-            return super.jsonResponse(res, {});
-        } catch (error) {
-            console.error('ログアウトエラー:', error);
-            const response = { message: 'ログアウト中にエラーが発生しました' };
-            return super.jsonResponse(res, response);
-        }
+        await session.deleteSession()
+        return super.jsonResponse(res, {});
     }
 
 }

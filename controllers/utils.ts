@@ -57,7 +57,6 @@ class Controller {
 
     protected WSTableResponse(table: {[key: string]: any}, wss: (WebSocket.WebSocket | undefined)[]) {
         for(let ws of wss) {
-            console.log(table)
             ws?.send(JSON.stringify(table))
         }
     }
@@ -128,9 +127,6 @@ class TableRule extends Controller {
             const tablesJson = await tm.updateTableJson(endGameTable)
             await this.insertReplay(endGameTable)
 
-            endGameTable.playerAggregate.players.forEach(player => {
-                console.log(player.hand)
-            })
             this.WSTableResponse({table: endGameTable}, wss)
 
             // ゲーム終了
@@ -197,7 +193,6 @@ class TableRule extends Controller {
         }, this.timeout)
 
         this.timers.set(playerInTurn.id, {timer, start})
-        console.log({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}})
         this.WSHidCardsTableResponse({table: table, [playerInTurn.id]: {time: {start, timeout: this.timeout}}}, wss)
     }
 
@@ -222,7 +217,6 @@ class TableRule extends Controller {
 
         const cfg = await config
         if(!this.replay) return;
-        console.log(table)
         cfg.rmqc.sendQueue(table)
     }
 

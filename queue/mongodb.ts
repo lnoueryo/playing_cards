@@ -25,11 +25,11 @@ class MongoDB {
     }
 
     async insertOne(document: any) {
+
         try {
             const database = this.client.db(this.database); // Use the name of your database
             const collection = database.collection(this.collection); // Use the name of your collection
             const result = await collection.insertOne(document);
-            console.log(`Document inserted with _id: ${result.insertedId}`);
             return result
         } catch (error) {
             console.error(error)

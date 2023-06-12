@@ -9,7 +9,14 @@ class ReplayController extends TableRule {
 
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        return this.httpResponse(res, 'replay-home.html')
+        try {
+            
+            return this.httpResponse(res, 'replay-home.html')
+        } catch (error) {
+            console.error(error)
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Error: Not Found');
+        }
     }
 
     async tables(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
@@ -32,13 +39,19 @@ class ReplayController extends TableRule {
         GROUP BY
             t.id
         `, [Number(params.id), Number(params.id)])
-        console.log(tables, 123456789)
         return this.jsonResponse(res, tables)
     }
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        return this.httpResponse(res, 'replay.html')
+        try {
+            
+            return this.httpResponse(res, 'replay.html')
+        } catch (error) {
+            console.error(error)
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Error: Not Found');
+        }
     }
 
     async table(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: '', table_id: ''}) {
@@ -46,7 +59,6 @@ class ReplayController extends TableRule {
         const cfg = await config;
         const drm = await new DatabaseReplayManager(cfg.mongoReplay)
         const table = await drm.getUserTableJson({id: params.table_id})
-        console.log(table)
         return this.jsonResponse(res, table)
     }
 
