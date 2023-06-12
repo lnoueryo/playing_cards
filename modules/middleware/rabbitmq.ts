@@ -20,11 +20,9 @@ class RabbitMQClient {
         };
     
         try {
-            console.log(url)
-            const response = await axios.post(url, data);
-            console.log(response.data);
-        } catch (error) {
-            console.error(error);
+            await axios.post(url, data);
+        } catch (error: any) {
+            throw new Error(error.message)
         }
     }
 

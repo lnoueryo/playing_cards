@@ -23,10 +23,7 @@ export class FileSessionManager extends SessionManager {
 
     async getUser(id: string) {
         const users = await this.getUsers();
-        if(id in users == false) {
-            console.warn('No user on session')
-            return;
-        }
+        if(id in users == false) return;
         return users[id];
     }
 

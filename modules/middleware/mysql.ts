@@ -37,7 +37,6 @@ class Mysql {
 
     async query(queryString: string, params: any[], retries: number = this.maxRetries): Promise<any> {
         try {
-            console.info(queryString, params)
             const [rows] = await this.pool.execute(queryString, params);
             return rows;
         } catch (error: any) {
@@ -65,15 +64,11 @@ class Mysql {
             return results;
         } catch (error: any) {
             await connection.rollback();
-            if (retries <= 0) {
-                throw new Error(`Failed to execute query after ${this.maxRetries} attempts: ${error.message}`);
-            }
-            console.log('An error has occurred, rolling back transaction:', error);
+            if (retries <= 0) throw new Error(`Failed to execute query after ${this.maxRetries} attempts: ${error.message}`);
             const delay = this.initialDelay * this.backoff ** (this.maxRetries - retries);
             console.error(`Query failed, retrying in ${delay}ms (${retries} retries left)...`);
             await this.sleep(delay);
             return this.transaction(handler, retries - 1);
-            // If any query within the transaction fails, an error is thrown and we roll back the transaction
         } finally {
             await connection.release()
         }
@@ -81,7 +76,6 @@ class Mysql {
 
     async close() {
         await this.pool.end();
-        console.log('Database pool closed.');
     }
 
     private sleep(ms: number) {

@@ -26,76 +26,45 @@ class MongoDB {
     }
 
     async getAll(query: {[key: string]: string | number} = {}) {
-        try {
-            const database = this.client.db(this.database); // Use the name of your database
-            const collection = database.collection(this.collection); // Use the name of your collection
-            const documents = await collection.find(query).toArray();
-            return documents
-            console.log(documents);
-        } catch (error) {
-            console.error(error)
-        }
+        const database = this.client.db(this.database); // Use the name of your database
+        const collection = database.collection(this.collection); // Use the name of your collection
+        const documents = await collection.find(query).toArray();
+        return documents
     }
 
     async getOne(query: {[key: string]: string | number}) {
-        try {
-            const database = this.client.db(this.database); // Use the name of your database
-            const collection = database.collection(this.collection); // Use the name of your collection
-            const result = await collection.findOne(query);
-            console.log(`${result}`);
-            return result
-        } catch (error) {
-            console.error(error)
-        }
+        const database = this.client.db(this.database); // Use the name of your database
+        const collection = database.collection(this.collection); // Use the name of your collection
+        const result = await collection.findOne(query);
+        return result
     }
 
     async insertOne(document: any) {
-        try {
-            const database = this.client.db(this.database); // Use the name of your database
-            const collection = database.collection(this.collection); // Use the name of your collection
-            const result = await collection.insertOne(document);
-            console.log(`Document inserted with _id: ${result.insertedId}`);
-            return result
-        } catch (error) {
-            console.error(error)
-        }
+        const database = this.client.db(this.database); // Use the name of your database
+        const collection = database.collection(this.collection); // Use the name of your collection
+        const result = await collection.insertOne(document);
+        return result
     }
 
     async replaceOne(query: {[key: string]: string | number}, document: any) {
-        try {
-            const database = this.client.db(this.database); // Use the name of your database
-            const collection = database.collection(this.collection); // Use the name of your collection
-            const result = await collection.replaceOne(query, document);
-            console.log(`Document inserted with _id: ${result}`);
-            return result
-
-        } catch (error) {
-            console.error(error)
-        }
+        const database = this.client.db(this.database); // Use the name of your database
+        const collection = database.collection(this.collection); // Use the name of your collection
+        const result = await collection.replaceOne(query, document);
+        return result
     }
 
     async deleteOne(query: {[key: string]: string | number}) {
-        try {
-            const database = this.client.db(this.database); // Use the name of your database
-            const collection = database.collection(this.collection); // Use the name of your collection
-            const result = await collection.deleteOne(query);
-            console.log(`Document inserted with _id: ${result.deletedCount}`);
-            return result
-        } catch (error) {
-            console.error(error)
-        }
+        const database = this.client.db(this.database); // Use the name of your database
+        const collection = database.collection(this.collection); // Use the name of your collection
+        const result = await collection.deleteOne(query);
+        return result
     }
 
     async deleteAll(query: {[key: string]: string | number}) {
-        try {
-            const database = this.client.db(this.database); // Use the name of your database
-            const collection = database.collection(this.collection); // Use the name of your collection
-            const result = await collection.deleteMany(query);
-            console.log(result.deletedCount);  // 削除されたドキュメントの数を出力
-            console.log(`Document inserted with _id: ${result.deletedCount}`);
-        } catch (error) {
-            console.error(error)
-        }
+        const database = this.client.db(this.database); // Use the name of your database
+        const collection = database.collection(this.collection); // Use the name of your collection
+        const result = await collection.deleteMany(query);
+        return result
     }
 }
 

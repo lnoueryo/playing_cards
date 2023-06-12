@@ -22,9 +22,8 @@ export class DatabaseSessionManager extends SessionManager {
             const user = await this.connection.query(query, params)
             if (user.length > 0) return user[0];
             return null;  // 見つからなかった場合
-        } catch (error) {
-            console.warn(error)
-            return null
+        } catch (error: any) {
+            throw new Error(error)
         }
     }
 
@@ -34,12 +33,10 @@ export class DatabaseSessionManager extends SessionManager {
         const params = [session.id, session.user.user_id || session.user.id]
         try {
             const user = await this.connection.query(query, params)
-            console.debug(user, 'createSession')
             if (user.length > 0) return user[0];
             return null;
-        } catch (error) {
-            console.warn(error)
-            return null
+        } catch (error: any) {
+            throw new Error(error)
         }
     }
 
@@ -51,9 +48,8 @@ export class DatabaseSessionManager extends SessionManager {
             const results = await this.connection.query(query, params)
             if (results.affectedRows > 0) return session;
             return null;
-        } catch (error) {
-            console.warn(error)
-            return null
+        } catch (error: any) {
+            throw new Error(error)
         }
     }
 
@@ -61,11 +57,9 @@ export class DatabaseSessionManager extends SessionManager {
 
         const handler = async(connection: PoolConnection) => {
             const [count] = await connection.execute('SELECT COUNT(*) as count FROM sessions WHERE table_id = ? FOR UPDATE', [session.user.table_id]) as any
-            console.log(count)
             if(count[0].count == 0) return count;
             if(count[0].count == table.maxPlayers) return count;
             const query = 'UPDATE sessions SET table_id = ? WHERE id = ?';
-            console.log(session.user.table_id, session.id)
             const params = [session.user.table_id, session.id]
             const [results] = await connection.execute(query, params)
             return results
@@ -75,9 +69,8 @@ export class DatabaseSessionManager extends SessionManager {
             const results = await this.connection.transaction(handler)
             if (results.affectedRows > 0) return session;
             return null;
-        } catch (error) {
-            console.warn(error)
-            return null
+        } catch (error: any) {
+            throw new Error(error)
         }
     }
 
@@ -93,9 +86,8 @@ export class DatabaseSessionManager extends SessionManager {
             const user = await this.connection.query(query, params)
             if (user.length > 0) return user[0];
             return null;
-        } catch (error) {
-            console.warn(error)
-            return null
+        } catch (error: any) {
+            throw new Error(error)
         }
     }
 

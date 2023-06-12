@@ -61,11 +61,10 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
     static getUser(id: string, secretKey: string) {
         try {
             const decoded = jwt.verify(id, secretKey);
-            if (typeof decoded !== 'object') throw new Error('The payload of the token is expected to be an object.');
+            if (typeof decoded !== 'object') return;
             return decoded
-        } catch (error) {
-            console.error('JWT Verification Error:', error);
-            return null
+        } catch (error: any) {
+            throw new Error(error)
         }
     }
 
