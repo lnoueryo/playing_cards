@@ -8,6 +8,8 @@ import { TableManagerFactory } from '../models/table/table_manager/table_manager
 import { Table } from '../models/table';
 import { CardBase } from '../models/card';
 import { DatabaseReplayManager } from '../models/table/table_manager/database_replay_manager';
+require('dotenv').config();
+
 
 class Controller {
 
@@ -104,7 +106,7 @@ class TableRule extends Controller {
     protected timeout = 10000
     protected endGameTimers = new Map()
     protected endGameTimeout = 15000
-    protected replay = false
+    protected replay = process.env.REPLAY
     protected replayConsumers = new Map()
 
     protected async discardAndDraw(table: Table, card: CardBase) {

@@ -27,6 +27,7 @@ services:
       SESSION_MANAGEMENT: ${SESSION_MANAGEMENT}
       TABLE: ${TABLE}
       TABLE_TOKEN: ${TABLE_TOKEN}
+      REPLAY: ${REPLAY}
       CHOKIDAR_USEPOLLING: true
       NODE_OPTIONS: --max_old_space_size=8192
     volumes:
@@ -58,10 +59,9 @@ services:
       - "./queue:/app"
     hostname: playing_cards_consumer
     tty: true
-    command: npm run dev
     networks:
       shared_network:
-        ipv4_address: 172.16.0.3
+        ipv4_address: 172.16.0.7
 
 networks:
   shared_network:
