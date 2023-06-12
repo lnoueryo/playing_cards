@@ -29,7 +29,9 @@ const main = async() => {
         }
 
     })
-    server.listen(4000) // 4000番ポートで起動
+    server.listen(4000, () => {
+        console.log('HTTP server is running on port 4000')
+    }) // 4000番ポートで起動
 }
 
 
