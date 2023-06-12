@@ -81,7 +81,7 @@ class Server {
     const cmToken = new CookieManager(req, res, this.TOKEN_COOKIE_KEY)
     const token = cmToken.getCookieValue()
 
-    if (req.method && pathname in this.routeHandlers[req.method]) {
+    if (req.method && this.routeHandlers[req.method] && pathname in this.routeHandlers[req.method]) {
       if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
       const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB));
       if (session) return this.backToPreviousPage(req, res);
@@ -94,7 +94,7 @@ class Server {
       const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
       if(!jwt) return this.redirect(res, '/')
       // 認証トークン
-      if (req.method) {
+      if (req.method && this.tokenRequiredRouteHandlers[req.method]) {
         for (const pattern in this.tokenRequiredRouteHandlers[req.method]) {
           const params = this.matchPath(pattern, pathname);
           if(params) return this.tokenRequiredRouteHandlers[req.method][pattern](req, res, jwt, params || {id: ''});
@@ -109,7 +109,7 @@ class Server {
       return this.redirect(res, '/login');
     }
     // ルーティング
-    if (req.method) {
+    if (req.method && this.sessionRequiredRouteHandlers[req.method]) {
       for (const pattern in this.sessionRequiredRouteHandlers[req.method]) {
         const params = this.matchPath(pattern, pathname);
         if (!token) {

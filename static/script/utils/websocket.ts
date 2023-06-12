@@ -3,7 +3,7 @@ class WebsocketConnector {
     private id: number;
     private handler: (e: MessageEvent<any>) => void;
     private url: string;
-    private connection: WebSocket = null;
+    private connection: WebSocket | null = null;
     private reconnectInterval: NodeJS.Timer | null;
 
     constructor(id: number, handler: (e: MessageEvent<any>) => void, url: string = `wss://${location.host}`) {
@@ -23,7 +23,7 @@ class WebsocketConnector {
       }
       this.connection = new WebSocket(this.url);
       this.connection.onopen = () => {
-        this.connection.send(String(this.id));
+        (this.connection as WebSocket).send(String(this.id));
         // 再接続処理のインターバルをクリア
         if (this.reconnectInterval) {
           clearInterval(this.reconnectInterval);

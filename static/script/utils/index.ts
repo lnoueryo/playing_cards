@@ -7,7 +7,7 @@ type AsyncFunction = () => Promise<any>;
 export const handleAsync = async(handler: AsyncFunction): Promise<any | AxiosResponse<any> | undefined> => {
   try {
     return await handler();
-  } catch (error) {
+  } catch (error: any) {
     return error.response
   }
 }
