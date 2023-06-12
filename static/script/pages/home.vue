@@ -42,7 +42,6 @@ const goToReplay = () => {
 }
 
 const createTable = async() => {
-  console.log(rules.value)
   const res = await handleAsync(async() => await axios.post('/api/table/create', rules.value));
   if(res.status == 200) return goToTable(res.data.id)
 }

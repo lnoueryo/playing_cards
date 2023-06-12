@@ -31,7 +31,6 @@ const goToReplay = (table_id) => {
 const fetchTables = async() => {
   const res = await axios.get(`/api/replay/${user.value.user_id}/table`);
   tables.value = res.data;
-  console.log(res.data)
 }
 
 const fetchUser = async() => {

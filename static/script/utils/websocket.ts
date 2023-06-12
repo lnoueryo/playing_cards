@@ -32,12 +32,12 @@ class WebsocketConnector {
       };
 
       this.connection.onerror = (error) => {
-        console.log(`WebSocket error: ${error}`);
+        console.error(`WebSocket error: ${error}`);
         this.tryReconnect();
       };
 
       this.connection.onclose = () => {
-        console.log("WebSocket connection closed");
+        console.error("WebSocket connection closed");
         this.tryReconnect();
       };
 
@@ -49,7 +49,7 @@ class WebsocketConnector {
       // サーバーが停止している場合等、すぐに再接続が成功しない場合があるため、一定間隔で再接続を試みる
       if (!this.reconnectInterval) {
         this.reconnectInterval = setInterval(() => {
-          console.log("Reconnecting WebSocket...");
+          console.error("Reconnecting WebSocket...");
           this.connectWebsocket();
         }, 5000); // ここでは5秒ごとに再接続を試みていますが、適宜調整してください。
       }

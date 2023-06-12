@@ -144,7 +144,6 @@ const discard = async(player, card) => {
 // }
 
 const setCountDown = (dataJson) => {
-  console.log(dataJson)
   intervalId.value = setInterval(() => {
     const start = dataJson[user.value.id].time.start
     const elapsed = Date.now() - start; // 経過時間を計算

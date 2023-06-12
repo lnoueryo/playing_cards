@@ -129,7 +129,6 @@ const tableAggregate = async(tables) => {
   await sleep(2500)
   for (let i = 1; i < tables.length; i++) {
     const nextTime = new Date(tables[i].createdAt).getTime()
-    console.log(nextTime)
     await sleep(nextTime - time)
     table.value = Table.createTable(tables[i])
     time = nextTime
@@ -160,7 +159,6 @@ const discard = async(player, card) => {
 
 
 const setCountDown = (dataJson) => {
-  console.log(dataJson)
   intervalId.value = setInterval(() => {
     const start = dataJson[user.value.id].time.start
     const elapsed = Date.now() - start; // 経過時間を計算

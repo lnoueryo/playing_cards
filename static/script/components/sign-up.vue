@@ -21,7 +21,6 @@ const user = reactive({
 const signUp = async() => {
   const res = await axios.post('/api/user/create', user);
   emit('signUp')
-  console.log(res.data)
 }
 
 </script>
