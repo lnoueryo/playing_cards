@@ -2,7 +2,7 @@ import { Knex } from 'knex';
 import { test } from '../../../../knexfile';
 import { DatabaseSessionManager } from '../../../../modules/auth/session_manager/database_session_manager';
 import { setupTestDB, teardownTestDB } from '../../../../__test_modules__/setup_test_db';
-import { Mysql } from '../../../../modules/database/mysql';
+import { Mysql } from '../../../../modules/middleware/mysql';
 import {  Session } from '../../../../modules/auth/auth_token/session';
 import { CookieManager } from '../../../../modules/auth/cookie_manager';
 const bcrypt = require('bcryptjs');

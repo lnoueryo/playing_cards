@@ -1,4 +1,4 @@
-import { Mysql } from "../../database/mysql";
+import { Mysql } from "../../middleware/mysql";
 import { DatabaseSessionManager } from "./database_session_manager";
 import { FileSessionManager } from "./file_session_manager";
 

@@ -3,7 +3,7 @@ import { CardBase, CardAggregate } from '../card'
 import { Player, PlayerAggregate } from '../player';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthToken } from "../../modules/auth";
-import { Mysql } from "../../modules/database/mysql";
+import { Mysql } from "../../modules/middleware/mysql";
 
 class Table {
 

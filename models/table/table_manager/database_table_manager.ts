@@ -1,9 +1,7 @@
-import * as fsPromises from 'fs/promises';
 import { Table } from "../table";
-import { Session } from '../../../modules/auth';
-import { TableManager, TableJson, TablesJson } from './table_manager'
-import { config } from '../../../main';
-import { MongoDB } from '../../../modules/database/mongodb';
+import { TableManager, TableJson } from './table_manager'
+
+import { MongoDB } from '../../../modules/middleware/mongodb';
 import { DatabaseTableAdaptor } from './database_table_adaptor';
 
 

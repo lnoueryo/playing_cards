@@ -1,6 +1,6 @@
 import { Session } from '../auth_token';
 import { SessionManager } from './session_manager';
-import { Mysql } from '../../database/mysql';
+import { Mysql } from '../../middleware/mysql';
 import { PoolConnection } from 'mysql2/promise';
 import { Table } from '../../../models/table';
 

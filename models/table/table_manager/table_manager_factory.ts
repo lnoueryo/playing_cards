@@ -1,5 +1,5 @@
 import { FileTableManager } from "."
-import { MongoDB } from "../../../modules/database/mongodb"
+import { MongoDB } from "../../../modules/middleware/mongodb"
 import { DatabaseTableManager } from "./database_table_manager"
 
 

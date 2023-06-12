@@ -1,4 +1,4 @@
-import { MongoDB } from '../../../modules/database/mongodb'
+import { MongoDB } from '../../../modules/middleware/mongodb'
 import { Table } from '../table'
 import { TableJson } from './table_manager'
 
