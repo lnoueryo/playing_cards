@@ -25,26 +25,28 @@ class HomeController extends TableRule {
                         // 通信障害などにより、トークンをセットできなかった可能性あり
                         const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, cfg.tableToken, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB), cfg.secretKey)
                         await authToken.createTable(session.user.table_id)
-                        return cfg.server.redirect(res, `/table/${session.user.table_id}`)
+                        cfg.server.redirect(res, `/table/${session.user.table_id}`)
+                        return session
                     }
                 }
     
                 // table_id削除
                 session = await session.deleteTable(session.user.table_id)
             }
-    
-            return this.httpResponse(res, 'index.html')
+            this.httpResponse(res, 'index.html')
         } catch (error) {
             console.error(error)
             res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('Error: Not Found');
         }
+        return session
     }
 
-    async tables(req: http.IncomingMessage, res: http.ServerResponse) {
+    async tables(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         const tables = await this.getTables()
-        return this.jsonResponse(res, tables)
+        this.jsonResponse(res, tables)
+        return session
     }
 
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
@@ -58,7 +60,8 @@ class HomeController extends TableRule {
             maxGames = body.maxGames;
         } catch (error) {
             console.warn(error)
-            return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+            return session
         }
         // TODO maxPlayers, maxRounds, maxGamesのバリデーション
 
@@ -84,7 +87,8 @@ class HomeController extends TableRule {
         await tm.createTableJson(table)
         const wss = cfg.server.getWSAllConnections()
         this.WSTablesResponse({tables: tables}, wss)
-        return this.jsonResponse(res, table)
+        this.jsonResponse(res, table)
+        return session
 
     }
 
@@ -99,7 +103,8 @@ class HomeController extends TableRule {
             table_id = body.table_id
         } catch (error) {
             console.warn(error)
-            return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+            return session
         }
         // TODO table_idのバリデーション
 
@@ -126,7 +131,8 @@ class HomeController extends TableRule {
             const tables = tm.toTables(newTablesJson)
             this.WSTableResponse({table: addedPlayerTable}, wssTable)
             this.WSTablesResponse({tables: tables}, wssHome)
-            return this.jsonResponse(res, table)
+            this.jsonResponse(res, table)
+            return session
         }
 
         // MongoDBのテーブル情報更新
@@ -140,7 +146,8 @@ class HomeController extends TableRule {
         this.WSHidCardsTableResponse({table: startedTable}, wssTable)
         this.WSTablesResponse({tables: tables}, wssHome)
 
-        return this.jsonResponse(res, addedPlayerTable)
+        this.jsonResponse(res, addedPlayerTable)
+        return session
 
     }
 

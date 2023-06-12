@@ -52,15 +52,16 @@ class Server {
     const httpServer = http.createServer(async(req, res) => {
       const start = Date.now();
       try {
-        await this.routingHandler(req, res)
+        const session = await this.routingHandler(req, res) as any
+        this.routingLog(req, res, start, session)
       } catch (error) {
         console.error(error)
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Error: Not Found');
       }
-      res.on('finish', () => {
-        this.routingLog(req, res, start)
-      });
+      // res.on('finish', () => {
+      //   this.routingLog(req, res, start)
+      // });
     });
     this.createWebsocketServer(httpServer)
     httpServer.listen(this.httpPort, () => {
@@ -212,12 +213,17 @@ class Server {
     return this.redirect(res, refererPathname);
   }
 
-  routingLog(req: http.IncomingMessage, res: http.ServerResponse, start: number) {
+  routingLog(req: http.IncomingMessage, res: http.ServerResponse, start: number, session?: Session) {
     const duration = Date.now() - start;
-    console.log(`${new Date().toISOString()} - Received request: ${req.method} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - Status: ${res.statusCode} - Response Time: ${duration}ms`);
+    let baseLog = `${new Date().toISOString()} - request: ${req.method} ${res.statusCode} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer} - Response Time: ${duration}ms`
+    if(session) {
+      baseLog += `- User_id: ${session.user.user_id}`
+    }
+    console.info(baseLog);
     // console.log(`${new Date().toISOString()} - Received request: ${req.method} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer} - Status: ${res.statusCode} - Response Time: ${duration}ms`);
 
   }
+
 }
 
 export { Server }

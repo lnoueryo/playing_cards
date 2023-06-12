@@ -28,13 +28,15 @@ class LoginController extends Controller {
     async session(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         const user = session.user
-        return super.jsonResponse(res, user);
+        super.jsonResponse(res, user);
+        return session
     }
 
     async token(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         const user = session.user
-        return super.jsonResponse(res, user);
+        super.jsonResponse(res, user);
+        return session
     }
 
     async login(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -57,7 +59,8 @@ class LoginController extends Controller {
     async logout(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         await session.deleteSession()
-        return super.jsonResponse(res, {});
+        super.jsonResponse(res, {});
+        return session
     }
 
 }
