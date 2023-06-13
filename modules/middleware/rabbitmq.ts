@@ -18,20 +18,16 @@ class RabbitMQClient {
         const data = {
             table_id: queue,
         };
-    
-        try {
-            await axios.post(url, data);
-        } catch (error: any) {
-            throw new Error(error.message)
-        }
+
+        return await axios.post(url, data);
     }
 
     async sendQueue(table: Table) {
-        await this.channel.sendToQueue(table.id, Buffer.from(JSON.stringify(table)));
+        return await this.channel.sendToQueue(table.id, Buffer.from(JSON.stringify(table)));
     }
 
     async deleteQueue(queue: string) {
-        await this.channel.deleteQueue(queue)
+        return await this.channel.deleteQueue(queue)
     }
 }
 

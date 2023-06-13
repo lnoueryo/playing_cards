@@ -51,13 +51,12 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
     }
 
     static getUser(id: string, secretKey: string) {
-        try {
-            const decoded = jwt.verify(id, secretKey);
-            if (typeof decoded !== 'object') return;
-            return decoded
-        } catch (error: any) {
-            throw new Error(error)
-        }
+        const decoded = jwt.verify(id, secretKey);
+        if (typeof decoded !== 'object') {
+            console.warn(`invalid token: ${id}`)
+            return
+        };
+        return decoded
     }
 
     static async createJsonWebToken(user: TokenUser, cm: CookieManager, secretKey: string, expiresIn: string = '1h') {

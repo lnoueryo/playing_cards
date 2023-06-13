@@ -10,25 +10,15 @@ class DatabaseReplayManager {
     }
 
     async getUserTableJson(query: {[key: string]: any} = {}): Promise<any[]> {
-        try {
-            const tablesJson = await this.connection.getAll(query) as any
-            return tablesJson
-        } catch (err) {
-            console.error(`Error reading file from disk: ${err}`);
-            return [];
-        }
+        const tablesJson = await this.connection.getAll(query) as any
+        return tablesJson
     }
 
     async createReplayTableJson(table: Table): Promise<{[key: string]: TableJson}> {
-        try {
-            const tableJson: { [key: string]: TableJson; } = {}
-            await this.connection.insertOne(table);
-            tableJson[table.id] = table
-            return tableJson
-        } catch (err) {
-            console.error(`Error writing file on disk: ${err}`);
-            return {}
-        }
+        const tableJson: { [key: string]: TableJson; } = {}
+        await this.connection.insertOne(table);
+        tableJson[table.id] = table
+        return tableJson
     }
 
 

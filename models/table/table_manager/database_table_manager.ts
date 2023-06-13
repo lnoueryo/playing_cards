@@ -14,56 +14,31 @@ class DatabaseTableManager extends TableManager {
     }
 
     async getTablesJson(): Promise<{[key: string]: TableJson}> {
-        try {
-            const tablesJson = await this.adaptor.getTablesJson()
-            return tablesJson
-        } catch (err) {
-            console.error(`Error reading file from disk: ${err}`);
-            return {};
-        }
+        const tablesJson = await this.adaptor.getTablesJson()
+        return tablesJson
     }
 
     async getTableJson(id: string): Promise<TableJson | undefined> {
-        try {
-            const tableJson = await this.adaptor.getTablesJson()
-            if(!tableJson[id]) return;
-            return tableJson[id]
-        } catch (err) {
-            console.error(`Error reading file from disk: ${err}`);
-            return;
-        }
+        const tableJson = await this.adaptor.getTablesJson()
+        if(!tableJson[id]) return;
+        return tableJson[id]
     }
 
     async createTableJson(table: Table): Promise<{[key: string]: TableJson}> {
-        try {
-            const tablesJson = await this.adaptor.createTableJson(table);
-            return tablesJson;
-        } catch (err) {
-            console.error(`Error writing file on disk: ${err}`);
-            return {}
-        }
+        const tablesJson = await this.adaptor.createTableJson(table);
+        return tablesJson;
     }
 
     async updateTableJson(table: Table): Promise<{[key: string]: TableJson}> {
-        try {
-            const tablesJson = await this.adaptor.updateTableJson(table);
-            return tablesJson;
-        } catch (err) {
-            console.error(`Error writing file on disk: ${err}`);
-            return {}
-        }
+        const tablesJson = await this.adaptor.updateTableJson(table);
+        return tablesJson;
     }
 
     async deleteTableJson(table: Table) {
-        try {
-            await this.adaptor.deleteTableJson(table);
-            const tablesJson = await this.getTablesJson()
-            delete tablesJson[table.id]
-            return tablesJson;
-        } catch (err) {
-            console.error(`Error writing file on disk: ${err}`);
-            return {}
-        }
+        await this.adaptor.deleteTableJson(table);
+        const tablesJson = await this.getTablesJson()
+        delete tablesJson[table.id]
+        return tablesJson;
     }
 
 }

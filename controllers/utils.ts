@@ -131,6 +131,7 @@ class TableRule extends Controller {
 
             // ゲーム終了
             if(endGameTable.isGameEndReached()) {
+                console.info(`${new Date().toISOString()} - Event: End Game - Table ID: ${endGameTable.id} - Player IDs: ${endGameTable.getPlayerIds()}`)
                 const endGameTimer = setTimeout(async() => {
                     const tm = TableManagerFactory.create(cfg.mongoTable)
                     const tableJson = await tm.getTableJson(endGameTable.id)
@@ -188,6 +189,7 @@ class TableRule extends Controller {
         const playerInTurn = table.getPlayerInTurn()
         const start = Date.now(); // タイマー開始時刻を記録
         const timer = setTimeout(() => {
+            console.info(`${new Date().toISOString()} - Event: Time Over And Next Player's Turn - Table ID: ${table.id} - Player ID: ${playerInTurn.id} - Player Name: ${playerInTurn.name}`)
             const drawnCard = playerInTurn.getDrawnCard()
             this.discardAndDraw(table, drawnCard)
         }, this.timeout)

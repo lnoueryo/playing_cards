@@ -18,39 +18,28 @@ export class DatabaseSessionManager extends SessionManager {
 
         const query = 'SELECT * FROM sessions s LEFT JOIN users u ON u.id = s.user_id WHERE s.id = ?';
         const params = [id]
-        try {
-            const user = await this.connection.query(query, params)
-            if (user.length > 0) return user[0];
-            return null;  // 見つからなかった場合
-        } catch (error: any) {
-            throw new Error(error)
-        }
+        const user = await this.connection.query(query, params)
+        if (user.length > 0) return user[0];
+        console.warn(`Couldn't find a record in sessions by ${id}`)
+        return null;  // 見つからなかった場合
     }
 
     async createSession(session: Session) {
 
         const query = 'INSERT INTO sessions (`id`, `user_id`, `created_at`, `updated_at`) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)';
         const params = [session.id, session.user.user_id || session.user.id]
-        try {
-            const user = await this.connection.query(query, params)
-            if (user.length > 0) return user[0];
-            return null;
-        } catch (error: any) {
-            throw new Error(error)
-        }
+        const user = await this.connection.query(query, params)
+        if (user.length > 0) return user[0];
+        return null;
     }
 
     async createTable(session: Session) {
 
         const query = 'UPDATE sessions SET table_id = ? WHERE id = ?';
         const params = [session.user.table_id, session.id]
-        try {
-            const results = await this.connection.query(query, params)
-            if (results.affectedRows > 0) return session;
-            return null;
-        } catch (error: any) {
-            throw new Error(error)
-        }
+        const results = await this.connection.query(query, params)
+        if (results.affectedRows > 0) return session;
+        return null;
     }
 
     async deleteTable(session: Session) {
@@ -61,14 +50,9 @@ export class DatabaseSessionManager extends SessionManager {
 
         const query = 'DELETE FROM sessions WHERE id = ?';
         const params = [session.id]
-        try {
-            const user = await this.connection.query(query, params)
-            if (user.length > 0) return user[0];
-            return null;
-        } catch (error: any) {
-            console.error(`query: ${query} - params: ${params}`)
-            throw new Error(error)
-        }
+        const user = await this.connection.query(query, params)
+        if (user.length > 0) return user[0];
+        return null;
     }
 
 }

@@ -7,6 +7,7 @@ import { DatabaseTableManager } from "./database_table_manager"
 class TableManagerFactory {
 
     static create(connection: MongoDB) {
+
         const table = process.env.TABLE
         if(!table) throw new Error('SESSION is undefined')
         if(table == 'database') return new DatabaseTableManager(connection)

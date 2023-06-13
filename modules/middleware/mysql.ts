@@ -36,10 +36,13 @@ class Mysql {
     }
 
     async query(queryString: string, params: any[], retries: number = this.maxRetries): Promise<any> {
+
         try {
             const [rows] = await this.pool.execute(queryString, params);
             return rows;
+
         } catch (error: any) {
+
             if (retries <= 0) {
                 throw new Error(`Failed to execute query after ${this.maxRetries} attempts: ${error.message}`);
             }
@@ -54,21 +57,31 @@ class Mysql {
         // Start transaction
         const connection = await this.pool.getConnection();
         await connection.beginTransaction();
+
         try {
+
             const results = await handler(connection)
             if(!results) {
                 await connection.rollback();
                 throw new Error('Something wrong')
             }
+
             await connection.commit();
             return results;
+
         } catch (error: any) {
+
             await connection.rollback();
-            if (retries <= 0) throw new Error(`Failed to execute query after ${this.maxRetries} attempts: ${error.message}`);
+            if (retries <= 0) {
+                await connection.release()
+                throw new Error(`Failed to execute query after ${this.maxRetries} attempts: ${error.message}`);
+            }
+
             const delay = this.initialDelay * this.backoff ** (this.maxRetries - retries);
             console.error(`Query failed, retrying in ${delay}ms (${retries} retries left)...`);
             await this.sleep(delay);
             return this.transaction(handler, retries - 1);
+
         } finally {
             await connection.release()
         }

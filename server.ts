@@ -215,9 +215,9 @@ class Server {
 
   routingLog(req: http.IncomingMessage, res: http.ServerResponse, start: number, session?: Session) {
     const duration = Date.now() - start;
-    let baseLog = `${new Date().toISOString()} - request: ${req.method} ${res.statusCode} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer} - Response Time: ${duration}ms`
+    let baseLog = `${new Date().toISOString()} - Access: ${req.method} ${res.statusCode} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer} - Response Time: ${duration}ms`
     if(session) {
-      baseLog += `- User_id: ${session.user.user_id}`
+      baseLog += `- User ID: ${session.user.user_id} - User Name: ${session.user.name}`
     }
     console.info(baseLog);
     // console.log(`${new Date().toISOString()} - Received request: ${req.method} ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer} - Status: ${res.statusCode} - Response Time: ${duration}ms`);

@@ -1,4 +1,3 @@
-import { Table } from '../../../models/table';
 import { Session } from '../auth_token'
 export abstract class SessionManager {
     abstract getUser(id: string): any;

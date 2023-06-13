@@ -9,7 +9,7 @@ class LoginController extends Controller {
 
     index(req: http.IncomingMessage, res: http.ServerResponse) {
         try {
-            
+
             return super.httpResponse(res, 'login.html')
         } catch (error) {
             console.error(error)
@@ -52,7 +52,12 @@ class LoginController extends Controller {
             return super.jsonResponse(res, { message: 'ログインに成功しました', user });
         }
 
-        console.warn('failed to log in')
+        if(!user) {
+            console.warn(`${new Date().toISOString()} - Authentication: ${req.method} 401 ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - Message: Not Found The Email - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
+            return super.jsonResponse(res, { message: 'ログインに失敗しました' }, 401);
+        }
+
+        console.warn(`${new Date().toISOString()} - Authentication: ${req.method} 401 ${req.url} from ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - Message: Password Is Wrong - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
         return super.jsonResponse(res, { message: 'ログインに失敗しました' }, 401);
     }
 
