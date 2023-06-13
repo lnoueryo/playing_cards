@@ -120,7 +120,7 @@ class HomeController extends TableRule {
 
         // table_idが入ったJWTをクッキーにセット
         const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, cfg.tableToken, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB), cfg.secretKey)
-        await authToken.updateTable(addedPlayerTable)
+        await authToken.createTable(addedPlayerTable.id)
 
         const wssHome = cfg.server.getWSAllConnections()
         const wssTable = cfg.server.getWSConnections(table.getPlayerIds())

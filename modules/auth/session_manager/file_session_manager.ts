@@ -39,13 +39,6 @@ export class FileSessionManager extends SessionManager {
         return users
     }
 
-    async updateTable(session: Session, table: Table) {
-        const users = await this.getUsers();
-        users[session.id] = session.user;
-        const data = JSON.stringify(users, null, 2);
-        await fs.writeFileSync(this.SESSION_FILE_PATH, data, 'utf8');
-        return users
-    }
 
     async deleteTable(session: Session) {
         return this.createTable(session)

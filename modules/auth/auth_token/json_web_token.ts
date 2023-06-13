@@ -41,14 +41,6 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
         return jwt
     }
 
-    async updateTable(table: Table) {
-        const user = JSON.parse(JSON.stringify(this.user));
-        user['table_id'] = table.id
-        const jwt = await JsonWebToken.createJsonWebToken(user, this.cm, this.secretKey)
-        jwt.cm.setValueToCookie(jwt.id)
-        return jwt
-    }
-
     static async createAuthToken(id: string, cm: CookieManager, secretKey: string) {
         const user = await this.getUser(id, secretKey);
         if(!user) {

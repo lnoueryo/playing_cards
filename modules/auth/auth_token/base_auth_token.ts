@@ -9,7 +9,6 @@ interface AuthToken extends IBaseAuthToken {
     endGame(): void;
     createTable(id: string): Promise<AuthToken>
     deleteTable(id: string): Promise<AuthToken>
-    updateTable(table: Table): Promise<AuthToken>
 }
 
 interface IBaseAuthToken {

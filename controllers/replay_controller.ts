@@ -10,7 +10,7 @@ class ReplayController extends TableRule {
     async index(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         try {
-            
+
             this.httpResponse(res, 'replay-home.html')
         } catch (error) {
             console.error(error)

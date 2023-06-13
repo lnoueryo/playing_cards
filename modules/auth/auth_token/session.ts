@@ -38,13 +38,6 @@ class Session extends BaseAuthToken implements AuthToken {
         return this.createTable('')
     }
 
-    async updateTable(table: Table) {
-        const user = JSON.parse(JSON.stringify(this.user));
-        user['table_id'] = table.id
-        const session = new Session(this.id, this.cm, user, this.manager)
-        return await this.manager.updateTable(session, table)
-    }
-
     static async createAuthToken(id: string, cm: CookieManager, manager: SessionManager) {
         const user = await this.getUser(id, manager);
         if(!user) return;

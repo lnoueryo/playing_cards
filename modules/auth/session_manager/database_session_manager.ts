@@ -53,27 +53,6 @@ export class DatabaseSessionManager extends SessionManager {
         }
     }
 
-    async updateTable(session: Session, table: Table) {
-
-        const handler = async(connection: PoolConnection) => {
-            const [count] = await connection.execute('SELECT COUNT(*) as count FROM sessions WHERE table_id = ? FOR UPDATE', [session.user.table_id]) as any
-            if(count[0].count == 0) return count;
-            if(count[0].count == table.maxPlayers) return count;
-            const query = 'UPDATE sessions SET table_id = ? WHERE id = ?';
-            const params = [session.user.table_id, session.id]
-            const [results] = await connection.execute(query, params)
-            return results
-        }
-
-        try {
-            const results = await this.connection.transaction(handler)
-            if (results.affectedRows > 0) return session;
-            return null;
-        } catch (error: any) {
-            throw new Error(error)
-        }
-    }
-
     async deleteTable(session: Session) {
         return this.createTable(session)
     }
@@ -87,6 +66,7 @@ export class DatabaseSessionManager extends SessionManager {
             if (user.length > 0) return user[0];
             return null;
         } catch (error: any) {
+            console.error(`query: ${query} - params: ${params}`)
             throw new Error(error)
         }
     }
