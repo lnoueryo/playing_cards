@@ -104,6 +104,8 @@ class TableRule extends Controller {
     protected timeout = 10000
     protected endGameTimers = new Map()
     protected endGameTimeout = 15000
+    protected startGameTimers = new Map()
+    protected startGameTimeout = 1000 * 60 * 30
     protected replay = process.env.REPLAY
     protected replayConsumers = new Map()
 
@@ -139,7 +141,7 @@ class TableRule extends Controller {
                     const table = Table.createTable(tableJson)
                     const ids = table.getPlayerIds()
                     for(const id of ids) {
-                        await endGameTable.deleteTable(cfg.DB, id)
+                        await endGameTable.deleteTable(cfg.DB, [id])
                     }
                     await tm.deleteTableJson(endGameTable)
                     //　キュー削除
@@ -148,9 +150,8 @@ class TableRule extends Controller {
                     const wssTable = cfg.server.getWSConnections(endGameTable.getPlayerIds())
                     this.WSTableResponse({table: ''}, wssTable)
 
-                    const tablesJson = await tm.getTablesJson()
+                    const tables = await this.getTables()
                     const wssHome = cfg.server.getWSAllConnections()
-                    const tables = tm.toTables(tablesJson)
                     super.WSTablesResponse({tables: tables}, wssHome)
                 }, this.endGameTimeout)
                 this.endGameTimers.set(endGameTable.id, endGameTimer)

@@ -149,13 +149,13 @@ class TableController extends TableRule {
                 return token
             }
 
-            await table.deleteTable(cfg.DB, token.user.user_id)
+            await table.deleteTable(cfg.DB, [token.user.user_id])
 
 
             const tm = TableManagerFactory.create(cfg.mongoTable)
-            let newTablesJson;
+            let newTableJson
             if(table.otherPlayersNotExist()) {
-                newTablesJson = await tm.deleteTableJson(table)
+                newTableJson = await tm.deleteTableJson(table)
                 // キュー削除
                 await cfg.rmqc.deleteQueue(table.id)
 
@@ -163,12 +163,11 @@ class TableController extends TableRule {
                 clearTimeout(timer)
             } else {
                 const newTable = table.leaveTable(token.user.user_id)
-                newTablesJson = await tm.updateTableJson(newTable)
+                newTableJson = await tm.updateTableJson(newTable)
                 token.endGame()
             }
 
-            const tables = tm.toTables(newTablesJson)
-            const newTableJson = newTablesJson[params.id]
+            const tables = await this.getTables()
 
             const wssHome = cfg.server.getWSAllConnections()
             this.WSTablesResponse({tables: tables}, wssHome)

@@ -179,9 +179,10 @@ class Table {
         await DB.transaction(handler)
     }
 
-    async deleteTable(DB: Mysql, user_id: number) {
+    async deleteTable(DB: Mysql, user_ids: number[]) {
         const handler = async(connection: any) => {
-            const tablesUsersParams = [this.id, user_id]
+            const placeholders = user_ids.map(() => "?").join(",");
+            const tablesUsersParams = [this.id, ...user_ids]
             const tablesParams = [this.id]
             const [tablesData] = await connection.execute(
                 'SELECT tu.*, t.start, t.active as table_active FROM tables_users tu LEFT JOIN tables t ON tu.table_id = t.id WHERE tu.table_id = ? AND tu.active = 1 FOR UPDATE',
@@ -189,12 +190,12 @@ class Table {
             );
 
             if (tablesData[0].start) {
-                await connection.execute('UPDATE tables_users SET active = false WHERE table_id = ? AND user_id = ?', tablesUsersParams);
+                await connection.execute(`UPDATE tables_users SET active = false WHERE table_id = ? AND user_id IN (${placeholders})`, tablesUsersParams);
                 if (tablesData.length === 1) {
                     await connection.execute('UPDATE tables SET active = false WHERE id = ?', tablesParams);
                 }
             } else {
-                await connection.execute('DELETE FROM tables_users WHERE table_id = ? AND user_id = ?', tablesUsersParams);
+                await connection.execute(`DELETE FROM tables_users WHERE table_id = ? AND user_id IN (${placeholders})`, tablesUsersParams);
                 if (tablesData.length === 1) await connection.execute('DELETE FROM tables WHERE id = ?', tablesParams);
             }
 

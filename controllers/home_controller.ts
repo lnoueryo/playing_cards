@@ -87,6 +87,22 @@ class HomeController extends TableRule {
             if(!res.getHeader('Set-Cookie')) throw new Error("token isn't set")
 
             await tm.createTableJson(table)
+
+            const timer = setTimeout(async() => {
+                const newtable = await this.getTable(table.id)
+                if(!newtable) return;
+                const userIds = newtable.getPlayerIds()
+                await table.deleteTable(cfg.DB, userIds)
+                await tm.deleteTableJson(newtable)
+                await cfg.rmqc.deleteQueue(table.id)
+                const tables = await this.getTables()
+                const wssTable = cfg.server.getWSConnections(userIds)
+                const wssHome = cfg.server.getWSAllConnections()
+                this.WSTableResponse({table: ''}, wssTable)
+                this.WSTablesResponse({tables: tables}, wssHome)
+            }, this.startGameTimeout);
+
+            this.startGameTimers.set(table.id, timer)
             const wss = cfg.server.getWSAllConnections()
             this.WSTablesResponse({tables: tables}, wss)
             this.jsonResponse(res, table)
@@ -128,8 +144,8 @@ class HomeController extends TableRule {
             if(!addedPlayerTable.isMaxPlayersReached()) {
                 // MongoDBのテーブル情報更新
                 const tm = TableManagerFactory.create(cfg.mongoTable)
-                const newTablesJson = await tm.updateTableJson(addedPlayerTable)
-                const tables = tm.toTables(newTablesJson)
+                tm.updateTableJson(addedPlayerTable)
+                const tables = await this.getTables()
                 this.WSTableResponse({table: addedPlayerTable}, wssTable)
                 this.WSTablesResponse({tables: tables}, wssHome)
                 this.jsonResponse(res, addedPlayerTable)
@@ -139,10 +155,13 @@ class HomeController extends TableRule {
             // MongoDBのテーブル情報更新
             console.info(`${new Date().toISOString()} - Event: Start Game - Table ID: ${addedPlayerTable.id} - Player IDs: ${addedPlayerTable.getPlayerIds()}`)
             const startedTable = addedPlayerTable.start()
+            const timer = this.startGameTimers.get(startedTable.id)
+            clearInterval(timer)
+
             const tm = TableManagerFactory.create(cfg.mongoTable)
-            const newTablesJson = await tm.updateTableJson(startedTable)
+            await tm.updateTableJson(startedTable)
             this.insertReplay(startedTable)
-            const tables = tm.toTables(newTablesJson)
+            const tables = await this.getTables()
 
             this.setTurnTimer(startedTable, wssTable)
             this.WSHidCardsTableResponse({table: startedTable}, wssTable)
