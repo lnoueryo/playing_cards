@@ -37,7 +37,11 @@ services:
       - "./:/app"
     hostname: playing_cards
     tty: true
-    # command: npm run dev
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: ${FLUENTD_HOST}:24224
+        tag: httpd.access
     networks:
       shared_network:
         ipv4_address: ${PLAYING_CARDS_HOST}
