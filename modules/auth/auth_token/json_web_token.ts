@@ -51,12 +51,23 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
     }
 
     static getUser(id: string, secretKey: string) {
-        const decoded = jwt.verify(id, secretKey);
-        if (typeof decoded !== 'object') {
-            console.warn(`invalid token: ${id}`)
-            return
-        };
-        return decoded
+        try {
+            const decoded = jwt.verify(id, secretKey);
+            if (typeof decoded !== 'object') {
+                console.warn(`invalid token: ${id}`)
+                return
+            };
+            return decoded
+        } catch (error) {
+            if (error instanceof jwt.TokenExpiredError) {
+                console.warn('Token expired!')
+            } else if (error instanceof jwt.JsonWebTokenError) {
+                console.warn('Invalid token!')
+            } else {
+                console.error(error);
+            }
+            return;
+        }
     }
 
     static async createJsonWebToken(user: TokenUser, cm: CookieManager, secretKey: string, expiresIn: string = '1h') {

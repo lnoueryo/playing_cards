@@ -40,100 +40,123 @@ class HomeController extends TableRule {
             console.error(error)
             res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('Error: Not Found');
+        } finally {
+            return session
         }
-        return session
     }
 
     async tables(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        const tables = await this.getTables()
-        this.jsonResponse(res, tables)
-        return session
+        try {
+
+            const tables = await this.getTables()
+            this.jsonResponse(res, tables)
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
+            return session
+        }
     }
 
     async create(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        const cfg = await config;
-        const {maxPlayers, maxRounds, maxGames} = await this.getBody(req) as Table
-        // TODO maxPlayers, maxRounds, maxGamesのバリデーション
+        try {
 
-        const tm = TableManagerFactory.create(cfg.mongoTable)
-        const tables = await this.getTables()
+            const cfg = await config;
+            const {maxPlayers, maxRounds, maxGames} = await this.getBody(req) as Table
+            // TODO maxPlayers, maxRounds, maxGamesのバリデーション
 
-        const player = new Player(session.user.user_id, session.user.name)
-        const playerAggregate = new PlayerAggregate()
-        const newPlayerAggregate = playerAggregate.addPlayer(player)
-        const cardAggregate = CardAggregate.createNewCards();
-        const table = new Table(cardAggregate, newPlayerAggregate, maxPlayers, maxRounds, maxGames);
-        tables.push(table)
+            const tm = TableManagerFactory.create(cfg.mongoTable)
+            const tables = await this.getTables()
 
-        // TODO ロールバックなど確認
-        await table.createTable(cfg.DB, session)
-        await cfg.rmqc.createQueue(table.id)
+            const player = new Player(session.user.user_id, session.user.name)
+            const playerAggregate = new PlayerAggregate()
+            const newPlayerAggregate = playerAggregate.addPlayer(player)
+            const cardAggregate = CardAggregate.createNewCards();
+            const table = new Table(cardAggregate, newPlayerAggregate, maxPlayers, maxRounds, maxGames);
+            tables.push(table)
 
-        // テーブル追加&&テーブルidセッションに追加
-        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, cfg.tableToken, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB), cfg.secretKey)
-        await authToken.createTable(table.id)
-        if(!res.getHeader('Set-Cookie')) throw new Error("token isn't set")
+            // TODO ロールバックなど確認
+            await table.createTable(cfg.DB, session)
+            await cfg.rmqc.createQueue(table.id)
 
-        await tm.createTableJson(table)
-        const wss = cfg.server.getWSAllConnections()
-        this.WSTablesResponse({tables: tables}, wss)
-        this.jsonResponse(res, table)
-        return session
+            // テーブル追加&&テーブルidセッションに追加
+            const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, cfg.tableToken, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB), cfg.secretKey)
+            await authToken.createTable(table.id)
+            if(!res.getHeader('Set-Cookie')) throw new Error("token isn't set")
+
+            await tm.createTableJson(table)
+            const wss = cfg.server.getWSAllConnections()
+            this.WSTablesResponse({tables: tables}, wss)
+            this.jsonResponse(res, table)
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
+            return session
+        }
 
     }
 
     async joinPlayer(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
-        const cfg = await config;
-        if(session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        try {
+            const cfg = await config;
+            if(session.hasTableId()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        const body = await this.getBody(req)
-        const table_id = body.table_id
-        // TODO table_idのバリデーション
+            const body = await this.getBody(req)
+            const table_id = body.table_id
+            // TODO table_idのバリデーション
 
-        const table = await this.getTable(table_id)
-        if(!table) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-        if(table.isMaxPlayersReached() || table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+            const table = await this.getTable(table_id)
+            if(!table) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+            if(table.isMaxPlayersReached() || table.isGameEndReached()) return this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
 
-        const player = new Player(session.user.user_id, session.user.name)
-        const addedPlayerTable = table.addPlayer(player)
+            const player = new Player(session.user.user_id, session.user.name)
+            const addedPlayerTable = table.addPlayer(player)
 
-        // TODO ロールバックなど確認
-        await addedPlayerTable.updatePlayer(cfg.DB, session)
+            // TODO ロールバックなど確認
+            await addedPlayerTable.updatePlayer(cfg.DB, session)
 
-        // table_idが入ったJWTをクッキーにセット
-        const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, cfg.tableToken, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB), cfg.secretKey)
-        await authToken.createTable(addedPlayerTable.id)
+            // table_idが入ったJWTをクッキーにセット
+            const authToken = await AuthTokenManagerFactory.create(session.user, session.id, req, res, cfg.tableToken, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB), cfg.secretKey)
+            await authToken.createTable(addedPlayerTable.id)
 
-        const wssHome = cfg.server.getWSAllConnections()
-        const wssTable = cfg.server.getWSConnections(addedPlayerTable.getPlayerIds())
-        if(!addedPlayerTable.isMaxPlayersReached()) {
+            const wssHome = cfg.server.getWSAllConnections()
+            const wssTable = cfg.server.getWSConnections(addedPlayerTable.getPlayerIds())
+            if(!addedPlayerTable.isMaxPlayersReached()) {
+                // MongoDBのテーブル情報更新
+                const tm = TableManagerFactory.create(cfg.mongoTable)
+                const newTablesJson = await tm.updateTableJson(addedPlayerTable)
+                const tables = tm.toTables(newTablesJson)
+                this.WSTableResponse({table: addedPlayerTable}, wssTable)
+                this.WSTablesResponse({tables: tables}, wssHome)
+                this.jsonResponse(res, addedPlayerTable)
+                return session
+            }
+
             // MongoDBのテーブル情報更新
+            console.info(`${new Date().toISOString()} - Event: Start Game - Table ID: ${addedPlayerTable.id} - Player IDs: ${addedPlayerTable.getPlayerIds()}`)
+            const startedTable = addedPlayerTable.start()
             const tm = TableManagerFactory.create(cfg.mongoTable)
-            const newTablesJson = await tm.updateTableJson(addedPlayerTable)
+            const newTablesJson = await tm.updateTableJson(startedTable)
+            this.insertReplay(startedTable)
             const tables = tm.toTables(newTablesJson)
-            this.WSTableResponse({table: addedPlayerTable}, wssTable)
+
+            this.setTurnTimer(startedTable, wssTable)
+            this.WSHidCardsTableResponse({table: startedTable}, wssTable)
             this.WSTablesResponse({tables: tables}, wssHome)
+
             this.jsonResponse(res, addedPlayerTable)
+
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
+
             return session
         }
-
-        // MongoDBのテーブル情報更新
-        console.info(`${new Date().toISOString()} - Event: Start Game - Table ID: ${addedPlayerTable.id} - Player IDs: ${addedPlayerTable.getPlayerIds()}`)
-        const startedTable = addedPlayerTable.start()
-        const tm = TableManagerFactory.create(cfg.mongoTable)
-        const newTablesJson = await tm.updateTableJson(startedTable)
-        this.insertReplay(startedTable)
-        const tables = tm.toTables(newTablesJson)
-
-        this.setTurnTimer(startedTable, wssTable)
-        this.WSHidCardsTableResponse({table: startedTable}, wssTable)
-        this.WSTablesResponse({tables: tables}, wssHome)
-
-        this.jsonResponse(res, addedPlayerTable)
-        return session
 
     }
 

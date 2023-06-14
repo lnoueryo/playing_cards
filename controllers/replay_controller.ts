@@ -22,33 +22,39 @@ class ReplayController extends TableRule {
     }
 
     async tables(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: ''}) {
-        const cfg = await config;
-        const tables = await cfg.DB.query(`
-        SELECT
-            tu.user_id,
-            t.*,
-            JSON_ARRAYAGG(JSON_OBJECT('id', u.id, 'name', u.name, 'image', u.image)) as players
-        FROM
-            tables_users tu
-        LEFT JOIN
-            tables t ON tu.table_id = t.id
-        LEFT JOIN
-            tables_users tu2 ON t.id = tu2.table_id
-        LEFT JOIN
-            users u ON tu2.user_id = u.id
-        WHERE
-            tu.user_id = ? AND tu2.user_id != ?
-        GROUP BY
-            t.id
-        `, [Number(params.id), Number(params.id)])
-        this.jsonResponse(res, tables)
-        return session
+
+        try {
+            const cfg = await config;
+            const tables = await cfg.DB.query(`
+            SELECT
+                tu.user_id,
+                t.*,
+                JSON_ARRAYAGG(JSON_OBJECT('id', u.id, 'name', u.name, 'image', u.image)) as players
+            FROM
+                tables_users tu
+            LEFT JOIN
+                tables t ON tu.table_id = t.id
+            LEFT JOIN
+                tables_users tu2 ON t.id = tu2.table_id
+            LEFT JOIN
+                users u ON tu2.user_id = u.id
+            WHERE
+                tu.user_id = ? AND tu2.user_id != ?
+            GROUP BY
+                t.id
+            `, [Number(params.id), Number(params.id)])
+            this.jsonResponse(res, tables)
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
+            return session
+        }
     }
 
     async show(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         try {
-            
             return this.httpResponse(res, 'replay.html')
         } catch (error) {
             console.error(error)
@@ -61,11 +67,17 @@ class ReplayController extends TableRule {
 
     async table(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken, params: { [key: string]: string } = {id: '', table_id: ''}) {
 
-        const cfg = await config;
-        const drm = await new DatabaseReplayManager(cfg.mongoReplay)
-        const table = await drm.getUserTableJson({id: params.table_id})
-        this.jsonResponse(res, table)
-        return session
+        try {
+            const cfg = await config;
+            const drm = await new DatabaseReplayManager(cfg.mongoReplay)
+            const table = await drm.getUserTableJson({id: params.table_id})
+            this.jsonResponse(res, table)
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
+            return session
+        }
     }
 
 }

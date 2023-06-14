@@ -54,56 +54,71 @@ class TableController extends TableRule {
 
         const cfg = await config;
 
-        if(!token.hasTableId() || !token.isYourTable(params)) {
-            console.warn(`${new Date().toISOString()} - Security: Trying to Exit a Wrong Table - ID: ${token.user.user_id} - Name: ${token.user.name} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
-            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        try {
+
+            if(!token.hasTableId() || !token.isYourTable(params)) {
+                console.warn(`${new Date().toISOString()} - Security: Trying to Exit a Wrong Table - ID: ${token.user.user_id} - Name: ${token.user.name} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
+                this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+                return token
+            }
+
+            const table = await this.getTable(params.id)
+            if(!table) {
+                token.deleteSession()
+                this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+                return token
+            }
+
+            const hidCardsTable = table.hideCards(token.user.user_id)
+            const responseJson: any = {table: hidCardsTable}
+            const playerInTurn = hidCardsTable.getPlayerInTurn()
+            const time = this.timers.get(playerInTurn.id)
+            if(time) responseJson[playerInTurn.id] = {time: {start: time.start, timeout: this.timeout}}
+
+            this.jsonResponse(res, responseJson)
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
             return token
         }
 
-        const table = await this.getTable(params.id)
-        if(!table) {
-            token.deleteSession()
-            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-            return token
-        }
-
-        const hidCardsTable = table.hideCards(token.user.user_id)
-        const responseJson: any = {table: hidCardsTable}
-        const playerInTurn = hidCardsTable.getPlayerInTurn()
-        const time = this.timers.get(playerInTurn.id)
-        if(time) responseJson[playerInTurn.id] = {time: {start: time.start, timeout: this.timeout}}
-
-        this.jsonResponse(res, responseJson)
-        return token
 
     }
 
     async next(req: http.IncomingMessage, res: http.ServerResponse, token: AuthToken, params: { [key: string]: string } = {id: ''}) {
 
-        if(!token.hasTableId() || !token.isYourTable(params)) {
-            console.warn(`${new Date().toISOString()} - Security: Trying to Exit a Wrong Table - ID: ${token.user.user_id} - Name: ${token.user.name} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
-            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+        try {
+            if(!token.hasTableId() || !token.isYourTable(params)) {
+                console.warn(`${new Date().toISOString()} - Security: Trying to Exit a Wrong Table - ID: ${token.user.user_id} - Name: ${token.user.name} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
+                this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+                return token
+            }
+
+            const table = await this.getTable(params.id)
+            if(!table) {
+                token.deleteSession()
+                this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+                return token
+            }
+
+            if(token.user.user_id != table.getPlayerInTurn().id) {
+                console.warn(`${new Date().toISOString()} - Security: Request From Player Not In Turn - ID: ${token.user.user_id} - Name: ${token.user.name} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
+                this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
+                return token
+            }
+
+            const cardJson = await this.getBody(req) as Card
+            const card = CardBase.createCard(cardJson)
+            const newTable = await this.discardAndDraw(table, card)
+            this.jsonResponse(res, newTable);
+        } catch (error) {
+            console.error(error)
+            return super.jsonResponse(res, {}, 500);
+        } finally {
             return token
         }
 
-        const table = await this.getTable(params.id)
-        if(!table) {
-            token.deleteSession()
-            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-            return token
-        }
-
-        if(token.user.user_id != table.getPlayerInTurn().id) {
-            console.warn(`${new Date().toISOString()} - Security: Request From Player Not In Turn - ID: ${token.user.user_id} - Name: ${token.user.name} - IP: ${req.headers['x-forwarded-for'] || req.socket.remoteAddress} - User Agent: ${req.headers['user-agent']} - Referrer: ${req.headers.referer}`)
-            this.jsonResponse(res, {"message": "Invalid request parameters"}, 400);
-            return token
-        }
-
-        const cardJson = await this.getBody(req) as Card
-        const card = CardBase.createCard(cardJson)
-        const newTable = await this.discardAndDraw(table, card)
-        this.jsonResponse(res, newTable);
-        return token
 
     }
 

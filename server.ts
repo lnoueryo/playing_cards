@@ -71,72 +71,63 @@ class Server {
 
   async routingHandler(req: http.IncomingMessage, res: http.ServerResponse) {
 
-    try {
+    const cfg = await config;
+    const requestUrl = url.parse(req.url || '', true);
+    const pathname = requestUrl.pathname || '/';
+    // 静的ファイルへのリクエストに対する処理
+    if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
 
-      const cfg = await config;
-      const requestUrl = url.parse(req.url || '', true);
-      const pathname = requestUrl.pathname || '/';
-      // 静的ファイルへのリクエストに対する処理
-      if (pathname.startsWith('/static/')) return this.handleStaticFile(req, res, pathname);
-  
-      // 認証が不要なパスに対する処理
-      const cmSession = new CookieManager(req, res, this.SESSION_ID_COOKIE_KEY)
-      const sessionId = cmSession.getCookieValue()
-      const cmToken = new CookieManager(req, res, this.TOKEN_COOKIE_KEY)
-      const token = cmToken.getCookieValue()
-  
-      if (req.method && this.routeHandlers[req.method] && pathname in this.routeHandlers[req.method]) {
-        if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
-        const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB));
-        if (session) return this.backToPreviousPage(req, res);
-      }
-  
-      if(!sessionId) return this.redirect(res, '/login');
-  
-      // セッションid認証
-      if(token) {
-        const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
-        if(!jwt) return this.redirect(res, '/')
-        // 認証トークン
-        if (req.method && this.tokenRequiredRouteHandlers[req.method]) {
-          for (const pattern in this.tokenRequiredRouteHandlers[req.method]) {
-            const params = this.matchPath(pattern, pathname);
-            if(params) return this.tokenRequiredRouteHandlers[req.method][pattern](req, res, jwt, params || {id: ''});
-          }
-        }
-      }
-  
+    // 認証が不要なパスに対する処理
+    const cmSession = new CookieManager(req, res, this.SESSION_ID_COOKIE_KEY)
+    const sessionId = cmSession.getCookieValue()
+    const cmToken = new CookieManager(req, res, this.TOKEN_COOKIE_KEY)
+    const token = cmToken.getCookieValue()
+
+    if (req.method && this.routeHandlers[req.method] && pathname in this.routeHandlers[req.method]) {
+      if(!sessionId) return this.routeHandlers[req.method][pathname](req, res);
       const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB));
-  
-      if(!session) {
-        cmSession.expireCookie()
-        return this.redirect(res, '/login');
-      }
-      // ルーティング
-      if (req.method && this.sessionRequiredRouteHandlers[req.method]) {
-        for (const pattern in this.sessionRequiredRouteHandlers[req.method]) {
+      if (session) return this.backToPreviousPage(req, res);
+    }
+
+    if(!sessionId) return this.redirect(res, '/login');
+
+    // セッションid認証
+    if(token) {
+      const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
+      if(!jwt) return this.redirect(res, '/')
+      // 認証トークン
+      if (req.method && this.tokenRequiredRouteHandlers[req.method]) {
+        for (const pattern in this.tokenRequiredRouteHandlers[req.method]) {
           const params = this.matchPath(pattern, pathname);
-          if (!token) {
-            if(params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params || {id: ''});
-          }
-          else {
-            const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
-            if(jwt) return this.redirect(res, `/table/${jwt.user.table_id}`)
-            cmToken.expireCookie()
-          }
+          if(params) return this.tokenRequiredRouteHandlers[req.method][pattern](req, res, jwt, params || {id: ''});
         }
       }
-  
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Error: Not Found');
-
-    } catch (error) {
-
-      console.error(error)
-      const contentType = 'application/json';
-      res.writeHead(500, { 'Content-Type': contentType });
-      return res.end({});
     }
+
+    const session = await Session.createAuthToken(sessionId, cmSession, SessionManagerFactory.create(cfg.sessionManagement, cfg.DB));
+
+    if(!session) {
+      cmSession.expireCookie()
+      return this.redirect(res, '/login');
+    }
+    // ルーティング
+    if (req.method && this.sessionRequiredRouteHandlers[req.method]) {
+      for (const pattern in this.sessionRequiredRouteHandlers[req.method]) {
+        const params = this.matchPath(pattern, pathname);
+        if (!token) {
+          if(params) return this.sessionRequiredRouteHandlers[req.method][pattern](req, res, session, params || {id: ''});
+        }
+        else {
+          const jwt = await JsonWebToken.createAuthToken(token, cmToken, this.SECRET_KEY);
+          if(jwt) return this.redirect(res, `/table/${jwt.user.table_id}`)
+          cmToken.expireCookie()
+        }
+      }
+    }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Error: Not Found');
+
   }
 
   createWebsocketServer(server: http.Server) {
