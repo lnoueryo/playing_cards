@@ -4,16 +4,16 @@
       <div class="card" v-for="(card, id) in sortCards(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -100 +'px' : 0}" @click="discard(player, card)">
         <img style="width: 100%" :src="getImgPath(card)" alt="">
       </div>
-      <div class="host" style="width: 32px;height: 32px;background-color: cadetblue;border-radius: 50%;" v-if="player.id == table.playerAggregate.players[0].id"></div>
+      <div class="host" v-if="player.id == table.playerAggregate.players[0].id"></div>
       <div class="player-result" v-if="table.isAfterGameEnd() && table.getWinner().id == player.id">winner</div>
       <div class="player-rank" v-if="table.isMaxPlayersReached() && (table.isAfterGameEnd() || user.id == player.id)">{{ player.analyzeHand().getRankName('jp') }}</div>
       <div class="player-name">{{ player.name }}</div>
     </div>
-    <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);text-align: center;">
-      <div style="position: relative">
-        <div style="position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);width: 128px;height: 128px;">
-          <div style="position: absolute;max-width: 80px;width: 100%" :style="discardsStyle[index]" v-for="(card, index) in table.cardAggregate.discards" :key="card.id">
-            <img style="width: 100%" :src="getImgPath(card)" alt="">
+    <div class="discards-wrapper">
+      <div class="discards-container">
+        <div class="discards">
+          <div class="discard" :style="discardsStyle[index]" v-for="(card, index) in table.cardAggregate.discards" :key="card.id">
+            <img class="card-image" :src="getImgPath(card)" alt="">
           </div>
         </div>
         <div style="position: relative;z-index: 2;background-color: #ffffffbf">
@@ -178,10 +178,14 @@ const time = ref(NaN)
 fetchUser()
 
 </script>
-<style>
+<style lang="scss">
+
 .container {
   position: relative;
   margin: auto;
+  padding: 48px 0;
+  // box-sizing: border-box;
+  // height: 100vh;
 }
 
 .item {
@@ -220,5 +224,41 @@ fetchUser()
   position: absolute;
   bottom: 100%;
   left: 0;
+  width: 32px;
+  height: 32px;
+  background-color: cadetblue;
+  border-radius: 50%;
 }
+
+.discards-wrapper {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+
+  .discards-container {
+    position: relative;
+
+    .discards {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 128px;height: 128px;
+
+      .discard {
+        position: absolute;
+        max-width: 80px;
+        width: 100%;
+
+        .discard-image {
+          width: 100%
+        }
+      }
+    }
+  }
+}
+
+
 </style>
