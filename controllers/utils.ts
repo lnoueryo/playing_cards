@@ -106,7 +106,7 @@ class TableRule extends Controller {
     protected endGameTimeout = 15000
     protected startGameTimers = new Map()
     protected startGameTimeout = 1000 * 60 * 30
-    protected replay = process.env.REPLAY
+    protected replay = process.env.REPLAY || true
     protected replayConsumers = new Map()
 
     protected async discardAndDraw(table: Table, card: CardBase) {

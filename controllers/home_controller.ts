@@ -144,7 +144,7 @@ class HomeController extends TableRule {
             if(!addedPlayerTable.isMaxPlayersReached()) {
                 // MongoDBのテーブル情報更新
                 const tm = TableManagerFactory.create(cfg.mongoTable)
-                tm.updateTableJson(addedPlayerTable)
+                await tm.updateTableJson(addedPlayerTable)
                 const tables = await this.getTables()
                 this.WSTableResponse({table: addedPlayerTable}, wssTable)
                 this.WSTablesResponse({tables: tables}, wssHome)
