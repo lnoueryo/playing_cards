@@ -6,9 +6,7 @@
 </template>
 <script setup>
 import axios from 'axios';
-import { reactive, ref } from 'vue'
-
-const count = ref(0)
+import { reactive } from 'vue'
 
 const user = reactive({
   name: '',

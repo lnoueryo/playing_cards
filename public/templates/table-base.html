@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+</head>
+<style>
+/* http://meyerweb.com/eric/tools/css/reset/
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+#app {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	box-sizing: border-box;
+	justify-content: center;
+	align-items: center;
+	min-height: 665px;
+	min-width: 1300px;
+	/* background: linear-gradient(to right, #8B0000, #000000);
+	background: linear-gradient(to right, #ffd700, #000000);
+	background: linear-gradient(to right, #00008B, #000000);
+	background: linear-gradient(to bottom, #ffd700, #fafad2, #ffd700); */
+}
+canvas { display: block; }
+</style>
+<body>
+    <div id="app">
+      <div style="min-width: 1300px;display: flex; flex-direction: column;height: 100%;margin: auto;position: relative;z-index: 1">
+        <div style="flex-grow: 1;height: 100%;">
+          {{% template %}}
+        </div>
+      </div>
+    </div>
+    <script src="/static/script/main.js" defer></script>
+</body>
+</html>
+
