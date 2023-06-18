@@ -1,7 +1,6 @@
 import { AuthToken, BaseAuthToken, TokenUser } from "./base_auth_token";
 import { CookieManager } from "../cookie_manager";
 import jwt from 'jsonwebtoken';
-import { Table } from "../../../models/table";
 
 
 class JsonWebToken extends BaseAuthToken implements AuthToken {
@@ -39,6 +38,15 @@ class JsonWebToken extends BaseAuthToken implements AuthToken {
         const jwt = await JsonWebToken.createJsonWebToken(user, this.cm, this.secretKey)
         jwt.cm.setValueToCookie(jwt.id)
         return jwt
+    }
+
+    responseUserJson() {
+        return {
+            user_id: this.user.user_id,
+            name: this.user.name,
+            email: this.user.email,
+            image: this.user.image,
+        }
     }
 
     static async createAuthToken(id: string, cm: CookieManager, secretKey: string) {

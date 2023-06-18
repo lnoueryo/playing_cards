@@ -72,12 +72,15 @@ const getWinner = computed(() => {
   });
 })
 
-const fetchTable = async() => {
+const table_id = computed(() => {
   const path = window.location.pathname;
   const parts = path.split('/');
+  return parts[3];
+})
 
-  const table_id = parts[3];
-  const res = await axios.get(`/api/replay/${user.value.user_id}/${table_id}`);
+const fetchTable = async() => {
+
+  const res = await axios.get(`/api/replay/${user.value.user_id}/${table_id.value}`);
   console.debug(res.data)
   tableAggregate(res.data)
 }
@@ -119,6 +122,8 @@ const startRender = async() => {
     console.error('An error happened:', error);
   }
 }
+
+const discard = () => {}
 
 
 fetchUser()

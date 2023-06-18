@@ -34,8 +34,7 @@ class LoginController extends Controller {
     async session(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
 
         try {
-            const user = session.user
-            super.jsonResponse(res, user);
+            super.jsonResponse(res, session.responseUserJson());
         } catch (error) {
             console.error(error)
             return super.jsonResponse(res, {}, 500);
@@ -46,9 +45,9 @@ class LoginController extends Controller {
     }
 
     async token(req: http.IncomingMessage, res: http.ServerResponse, session: AuthToken) {
+
         try {
-            const user = session.user
-            super.jsonResponse(res, user);
+            super.jsonResponse(res, session.responseUserJson());
         } catch (error) {
             console.error(error)
             return super.jsonResponse(res, {}, 500);

@@ -101,7 +101,7 @@ class Controller {
 class TableRule extends Controller {
 
     protected timers = new Map()
-    protected timeout = 10000
+    protected timeout = 1000000
     protected endGameTimers = new Map()
     protected endGameTimeout = 15000
     protected startGameTimers = new Map()

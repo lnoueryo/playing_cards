@@ -16,7 +16,7 @@ export class DatabaseSessionManager extends SessionManager {
 
     async getUser(id: string) {
 
-        const query = 'SELECT * FROM sessions s LEFT JOIN users u ON u.id = s.user_id WHERE s.id = ?';
+        const query = 'SELECT s.*, u.name, u.email, u.image FROM sessions s LEFT JOIN users u ON u.id = s.user_id WHERE s.id = ?';
         const params = [id]
         const user = await this.connection.query(query, params)
         if (user.length > 0) return user[0];

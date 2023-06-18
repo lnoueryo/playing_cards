@@ -16,7 +16,7 @@
           <div v-if="time < 11">{{ time }}</div>
         </div>
         <div v-else>
-          <form :action="'/api/table/' + user.table_id + '/exit'" method="post">
+          <form :action="'/api/table/' + table_id + '/exit'" method="post">
             <input type="submit" value="退出">
           </form>
         </div>
@@ -60,11 +60,6 @@ const discardsStyle = computed(() => {
   return styles
 })
 
-const analyzeHand = (playerJson) => {
-  const player = Player.createPlayer(playerJson)
-  return player.analyzeHand().getRankName('jp')
-}
-
 const isMaxPlayersReached = computed(() => {
   return table.value.maxPlayers == table.value.playerAggregate.players.length;
 })
@@ -87,24 +82,6 @@ const getWinner = computed(() => {
   });
 })
 
-const sortCards = (cards) => {
-  let drawCard;
-  if(cards.length == 6) {
-    drawCard = cards[cards.length - 1]
-    cards = cards.slice(0, cards.length - 1);
-  }
-
-  const sortedCard = cards.sort((a, b) => {
-    if (a.type === 4 && b.type !== 4) return 1; // aをbより後ろにする
-    if (a.type !== 4 && b.type === 4) return -1; // aをbより前にする
-    if (a.number !== b.number) return a.number - b.number;
-    return a.type - b.type;
-  });
-  if(drawCard) sortedCard.push(drawCard)
-
-  return sortedCard
-}
-
 const positions = computed(() => {
   return Array.from({length: table.value.playerAggregate.players.length}, (_, i) => {
     const angle = 2 * Math.PI * (i / table.value.playerAggregate.players.length) + Math.PI / 2;
@@ -124,8 +101,38 @@ const showGame = computed(() => {
   return table.value.game == table.value.maxGames - 1 ? 'ラストゲーム' : `${table.value.game + 1}戦目`
 })
 
+const table_id = computed(() => {
+  const path = window.location.pathname;
+  const parts = path.split('/');
+  return parts[2];
+})
+
+const analyzeHand = (playerJson) => {
+  const player = Player.createPlayer(playerJson)
+  return player.analyzeHand().getRankName('jp')
+}
+
+const sortCards = (cards) => {
+  let drawCard;
+  if(cards.length == 6) {
+    drawCard = cards[cards.length - 1]
+    cards = cards.slice(0, cards.length - 1);
+  }
+
+  const sortedCard = cards.sort((a, b) => {
+    if (a.type === 4 && b.type !== 4) return 1; // aをbより後ろにする
+    if (a.type !== 4 && b.type === 4) return -1; // aをbより前にする
+    if (a.number !== b.number) return a.number - b.number;
+    return a.type - b.type;
+  });
+  if(drawCard) sortedCard.push(drawCard)
+
+  return sortedCard
+}
+
 const fetchTable = async() => {
-  const res = await axios.get('/api/table/' + user.value.table_id);
+
+  const res = await axios.get('/api/table/' + table_id.value);
   console.debug(res.data)
   table.value = Table.createTable(res.data.table)
   if(user.value.user_id in res.data) setCountDown(res.data)

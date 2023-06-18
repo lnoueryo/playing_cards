@@ -1,8 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { SessionManager, SessionManagerFactory } from '../session_manager';
+import { SessionManager } from '../session_manager';
 import { CookieManager } from '../cookie_manager';
 import { AuthToken, BaseAuthToken, TokenUser } from './base_auth_token';
-import { Table } from '../../../models/table';
 
 
 
