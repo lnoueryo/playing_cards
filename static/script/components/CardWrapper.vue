@@ -3,15 +3,15 @@
     <div class="container">
       <div class="item" v-for="(player, index) in sortPlayers(table.playerAggregate.players)" :key="player.id" :style="cardStyle(index)">
         <div class="hand">
-          <Cards :player="player" />
-          <slot name="cards" :player="player" v-if="player"></slot>
+          <Cards :player="player" @discard="discard($event, player)" />
+          <slot name="cards" :player="player"></slot>
         </div>
       </div>
     </div>
     <div class="discards-wrapper">
       <div class="discards-container">
         <Discards :table="table" />
-        <slot name="discards"></slot>
+        <slot name="discards" :table="table"></slot>
       </div>
     </div>
   </div>
@@ -22,6 +22,8 @@ import { computed, ref, watch } from "vue";
 import { defineProps } from "vue";
 import Cards from '../components/Cards.vue'
 import Discards from '../components/Discards.vue'
+
+const emit = defineEmits()
 
 const props = defineProps({
   table: Object | String,
@@ -49,13 +51,18 @@ const positions = computed(() => {
 
 
 const sortPlayers = (players) => {
-  const userIndex = players.findIndex(player => player.id === user.value.id);
+  const userIndex = players.findIndex(player => player.id === user.value.user_id);
   if(userIndex !== -1) return players.slice(userIndex).concat(players.slice(0, userIndex));
   return players
 }
 
 const cardStyle = (index) => {
   return { left: positions.value[index].left, top: positions.value[index].top, transform: positions.value[index].transform, width: index == 0 ? positions.value[index].width * 2 + '%' : positions.value[index].width + '%' }
+}
+
+const discard = (card, player) => {
+  if(player.id != user.value.user_id || player.hand.cards.length != 6) return;
+  emit('discard', card)
 }
 
 </script>

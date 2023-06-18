@@ -56,10 +56,27 @@ table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
+#app {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	box-sizing: border-box;
+	justify-content: center;
+}
 </style>
 <body>
     <div id="app">
-        {{% template %}}
+      <div style="width: 1300px;display: flex; flex-direction: column;height: 100%;margin: auto">
+        <div style="display: flex;justify-content: space-between;padding: 24px">
+          <div>playing-cards</div>
+          <div>
+            <button>ログアウト</button>
+          </div>
+        </div>
+        <div style="flex-grow: 1; overflow: hidden;height: 100%;">
+          {{% template %}}
+        </div>
+      </div>
     </div>
     <script src="/static/script/main.js" defer></script>
 </body>

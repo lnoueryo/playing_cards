@@ -49,7 +49,7 @@ const createTable = async() => {
 const fetchUser = async() => {
   const res = await handleAsync(async() => await axios.get('/api/session'));
   user.value = res.data
-  websocketConnector.value = new WebsocketConnector(user.value.id, websocketHandler)
+  websocketConnector.value = new WebsocketConnector(user.value.user_id, websocketHandler)
   websocketConnector.value.connectWebsocket()
 }
 

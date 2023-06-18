@@ -1,58 +1,52 @@
 <template>
-  <div class="container" :style="{ height: containerHeight, width: containerHeight }" v-if="table.playerAggregate">
-    <div class="item" v-for="(player, index) in sortPlayers(table.playerAggregate.players)" :key="player.id" :style="cardStyle(index)">
-      <div class="card" v-for="(card, id) in sortCards(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -100 +'px' : 0}" @click="discard(player, card)">
-        <img style="width: 100%" :src="getImgPath(card)" alt="">
+  <CardWrapper :table="table" :user="user" @discard="discard" v-if="isTableReady">
+    <template v-slot:cards="{player}">
+      <div v-if="player">
+        <div class="host" v-if="player.id == table.playerAggregate.players[0].id"></div>
+        <div class="player-result" v-if="isAfterGameEnd && getWinner.id == player.id">winner</div>
+        <div class="player-rank" v-if="isMaxPlayersReached && (isAfterGameEnd || user.user_id == player.id)">{{ analyzeHand(player) }}</div>
+        <div class="player-name">{{ player.name }}</div>
       </div>
-      <div class="host" v-if="player.id == table.playerAggregate.players[0].id"></div>
-      <div class="player-result" v-if="table.isAfterGameEnd() && table.getWinner().id == player.id">winner</div>
-      <div class="player-rank" v-if="table.isMaxPlayersReached() && (table.isAfterGameEnd() || user.id == player.id)">{{ player.analyzeHand().getRankName('jp') }}</div>
-      <div class="player-name">{{ player.name }}</div>
-    </div>
-    <div class="discards-wrapper">
-      <div class="discards-container">
-        <div class="discards">
-          <div class="discard" :style="discardsStyle[index]" v-for="(card, index) in table.cardAggregate.discards" :key="card.id">
-            <img class="card-image" :src="getImgPath(card)" alt="">
-          </div>
+    </template>
+    <template v-slot:discards="{table}">
+      <div class="center-display" v-if="table">
+        <div v-if="isMaxPlayersReached && !isGameEndReached">
+          <div>{{ showGame }}</div>
+          <div v-if="!isAfterGameEnd">{{ showRound }}</div>
+          <div v-if="time < 11">{{ time }}</div>
         </div>
-        <div style="position: relative;z-index: 2;background-color: #ffffffbf">
-          <div v-if="table.isMaxPlayersReached() && !table.isGameEndReached()">
-            <div>{{ showGame }}</div>
-            <div v-if="!table.isAfterGameEnd()">{{ showRound }}</div>
-            <div v-if="time < 11">{{ time }}</div>
-          </div>
-          <div v-else>
-            <form :action="'/api/table/' + user.table_id + '/exit'" method="post">
-              <input type="submit" value="退出">
-            </form>
-          </div>
+        <div v-else>
+          <form :action="'/api/table/' + user.table_id + '/exit'" method="post">
+            <input type="submit" value="退出">
+          </form>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </CardWrapper>
 </template>
 <script setup>
 import axios from 'axios';
 import { onMounted, onUnmounted,computed, reactive, ref } from 'vue'
-import {handleAsync, WebsocketConnector } from '../utils'
+import {handleAsync, WebsocketConnector, createTable, renderAnimate } from '../utils'
 import { Table } from '../../../models/table/table'
+import { Player } from '../../../models/player'
+import CardWrapper from '../components/CardWrapper.vue'
 
-const containerHeight = ref(`${window.innerHeight - 30}px`)
+// const containerHeight = ref(`${window.innerHeight - 30}px`)
 
 // ウィンドウのリサイズ時に containerHeight を更新する
-onMounted(() => {
-  window.addEventListener('resize', handleResize)
-})
+// onMounted(() => {
+//   window.addEventListener('resize', handleResize)
+// })
 
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
+// onUnmounted(() => {
+//   window.removeEventListener('resize', handleResize)
+// })
 
-const handleResize = () => {
-  containerHeight.value = `${window.innerHeight - 30}px`
-}
-const table = ref({})
+// const handleResize = () => {
+//   containerHeight.value = `${window.innerHeight - 30}px`
+// }
+const table = ref('')
 const user = ref('')
 
 const discardsStyle = computed(() => {
@@ -64,6 +58,33 @@ const discardsStyle = computed(() => {
     styles.push({ left: `${left}%`, top: `${right}%`, transform: `translate(-50%, -50%) rotate(${rotation}deg)`})
   }
   return styles
+})
+
+const analyzeHand = (playerJson) => {
+  const player = Player.createPlayer(playerJson)
+  return player.analyzeHand().getRankName('jp')
+}
+
+const isMaxPlayersReached = computed(() => {
+  return table.value.maxPlayers == table.value.playerAggregate.players.length;
+})
+
+const isAfterGameEnd = computed(() => {
+  return table.value.playerAggregate.players.every((player) => player.hand.cards == 5) && this.round == 0 && this.turn == 0;
+})
+
+const isGameEndReached = computed(() => {
+  return table.value.maxGames == table.value.game;
+})
+
+const getWinner = computed(() => {
+  return table.value.playerAggregate.players.reduce((prev, current) => {
+    const currentRank = current.analyzeHand().getRank()
+    const prevRank = prev.analyzeHand().getRank()
+    if (currentRank.rank > prevRank.rank) return current;
+    else if (currentRank.rank === prevRank.rank) return currentRank.highCard > prevRank.highCard ? current : prev;
+    return prev;
+  });
 })
 
 const sortCards = (cards) => {
@@ -103,37 +124,29 @@ const showGame = computed(() => {
   return table.value.game == table.value.maxGames - 1 ? 'ラストゲーム' : `${table.value.game + 1}戦目`
 })
 
-const cardStyle = (index) => {
-  return { left: positions.value[index].left, top: positions.value[index].top, transform: positions.value[index].transform, width: index == 0 ? positions.value[index].width * 2 + '%' : positions.value[index].width + '%' }
-}
-
-const getImgPath = (card) => {
-  return '/static/images/cards/torannpu-illust' + card.id + '.png'
-}
-
 const fetchTable = async() => {
   const res = await axios.get('/api/table/' + user.value.table_id);
   console.debug(res.data)
   table.value = Table.createTable(res.data.table)
-  if(user.value.id in res.data) setCountDown(res.data)
+  if(user.value.user_id in res.data) setCountDown(res.data)
 }
 
 const fetchUser = async() => {
   const res = await handleAsync(async() => await axios.get('/api/token'));
+  console.log(res.data)
   user.value = res.data
   await fetchTable()
-  websocketConnector.value = new WebsocketConnector(user.value.id, websocketHandler)
+  websocketConnector.value = new WebsocketConnector(user.value.user_id, websocketHandler)
   websocketConnector.value.connectWebsocket()
 }
 
 const sortPlayers = (players) => {
-  const userIndex = players.findIndex(player => player.id === user.value.id);
+  const userIndex = players.findIndex(player => player.id === user.value.user_id);
   if(userIndex !== -1) return players.slice(userIndex).concat(players.slice(0, userIndex));
   return players
 }
 
-const discard = async(player, card) => {
-  if(player.id != user.value.id || player.hand.cards.length != 6) return;
+const discard = async(card) => {
   resetTimer()
   const res = await axios.post('/api/table/' + user.value.table_id + '/next', card);
 }
@@ -145,9 +158,9 @@ const discard = async(player, card) => {
 
 const setCountDown = (dataJson) => {
   intervalId.value = setInterval(() => {
-    const start = dataJson[user.value.id].time.start
+    const start = dataJson[user.value.user_id].time.start
     const elapsed = Date.now() - start; // 経過時間を計算
-    const remaining = dataJson[user.value.id].time.timeout - elapsed; // 残り時間を計算
+    const remaining = dataJson[user.value.user_id].time.timeout - elapsed; // 残り時間を計算
     if (remaining <= 0) resetTimer();
     else time.value = Math.floor(remaining / 1000);
   }, 1000); // 1秒ごとに残り時間を表示
@@ -166,99 +179,84 @@ const websocketHandler = (e) => {
     table.value = Table.createTable(dataJson.table)
   }
   // ユーザー特有の処理
-  if(user.value.id in dataJson) setCountDown(dataJson)
+  if(user.value.user_id in dataJson) setCountDown(dataJson)
 }
 
 
 const websocketConnector = ref('')
 const intervalId = ref(null)
 const time = ref(NaN)
+const isTableReady = ref(false)
+
+const startRender = async() => {
+  try {
+    isTableReady.value = false;
+    const table = await createTable()
+    renderAnimate(table);
+    isTableReady.value = true;
+  } catch (error) {
+    console.error('An error happened:', error);
+  }
+}
+
 
 
 fetchUser()
-
+startRender()
 </script>
-<style lang="scss">
-
-.container {
+<style lang="scss" scoped>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap');
+@import url('https://fonts.cdnfonts.com/css/trajan-pro');
+@import url('https://fonts.cdnfonts.com/css/bodoni-std');
+@import url('https://fonts.cdnfonts.com/css/eb-garamond-2');
+// font-family: 'Playfair Display', serif;
+// font-family: 'Trajan Pro', sans-serif;
+// font-family: 'Bodoni Std', sans-serif;
+// font-family: 'EB Garamond', sans-serif;
+.center-display {
   position: relative;
-  margin: auto;
-  padding: 48px 0;
-  // box-sizing: border-box;
-  // height: 100vh;
-}
-
-.item {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  padding: 0 48px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card {
-  display: flex;
-  margin: 16px 4px;
-  position: relative;
-  max-width: 100px
+  background-color: rgba(255, 255, 255, 0.481);
 }
 
 .player-result {
   position: absolute;
   bottom: 100%;
   right: 0%;
+  transform: translate(-50%, -50%);
 }
 
 .player-rank {
   position: absolute;
   bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-family: "Source Han Serif JP", serif;
+  font-size: 24px;
+  font-weight: bold;
+  filter: drop-shadow(2px 4px 6px black);
+  word-break: keep-all;
 }
 
 .player-name {
   position: absolute;
-  top: 100%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-family: "Source Han Serif JP", serif;
+  font-size: 24px;
+  font-weight: bold;
+  filter: drop-shadow(2px 4px 6px black);
 }
 
 .host {
   position: absolute;
   bottom: 100%;
   left: 0;
-  width: 32px;
-  height: 32px;
+  width: 16px;
+  height: 16px;
   background-color: cadetblue;
   border-radius: 50%;
 }
-
-.discards-wrapper {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-
-  .discards-container {
-    position: relative;
-
-    .discards {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 128px;height: 128px;
-
-      .discard {
-        position: absolute;
-        max-width: 80px;
-        width: 100%;
-
-        .discard-image {
-          width: 100%
-        }
-      }
-    }
-  }
-}
-
 
 </style>

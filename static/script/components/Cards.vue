@@ -1,6 +1,6 @@
 <template>
   <div class="cards">
-    <div class="card" v-for="(card, id) in sortCards(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -130 +'px' : 0}" @click="discard(player, card)">
+    <div class="card" v-for="(card, id) in sortCards(player.hand.cards)" :key="card.id" :style="{position: id == 5 ? 'absolute' : 'relative', right: id == 5 ? -130 +'px' : 0}" @click="discard(card)">
       <img class="card-image" :src="getImgPath(card)" draggable="false">
     </div>
   </div>
@@ -8,6 +8,7 @@
 
 <script setup>
 import { defineProps } from "vue";
+const emit = defineEmits()
 
 const props = defineProps({
   player: Object
@@ -39,10 +40,8 @@ const imagePath = (card) => {
   return {backgroundImage: `url(/static/images/cards/torannpu-illust${card.id}.png)`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', paddingBottom: '60%', width: '100%'}
 }
 
-const discard = async(player, card) => {
-  if(player.id != user.value.id || player.hand.cards.length != 6) return;
-  resetTimer()
-  const res = await axios.post('/api/table/' + user.value.table_id + '/next', card);
+const discard = async(card) => {
+  emit('discard', card)
 }
 
 </script>
