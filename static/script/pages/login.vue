@@ -17,8 +17,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import SignIn from '../components/sign-in.vue'
-import SignUp from '../components/sign-up.vue'
+import SignIn from '../components/SignIn.vue'
+import SignUp from '../components/SignUp.vue'
 
 const page = ref(true)
 

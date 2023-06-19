@@ -1,5 +1,6 @@
 // AxiosResponse型をインポートします
 import { WebsocketConnector } from './websocket';
+import { rules, validate } from './rules';
 import { AxiosResponse } from 'axios';
 import * as THREE from 'three';
 
@@ -78,4 +79,4 @@ export const renderAnimate = (table: any) => {
   }, false);
 }
 
-export { WebsocketConnector }
+export { WebsocketConnector, rules, validate }
