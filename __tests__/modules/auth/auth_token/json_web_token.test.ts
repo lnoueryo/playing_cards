@@ -131,7 +131,7 @@ describe('JsonWebToken', () => {
 
             const id = 'adgfsdbfhklnkcs;l,ls,kc;ae'
             const decodedUser = await JsonWebToken.getUser(id, secretKey)
-            expect(decodedUser).toBeNull()
+            expect(decodedUser).toBeUndefined()
         });
 
     });
