@@ -14,12 +14,12 @@
         {{ validatePassword }}
       </div>
     </div>
-    <button class="btn btn-secondary w-100" type="button" @click="signIn" :disabled="!isFormReady">ログイン</button>
+    <button class="btn btn-secondary w-100" type="button" @click="signIn">ログイン</button>
   </form>
 </template>
 <script setup>
 import axios from 'axios';
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { rules, validate } from '../utils'
 
 const user = reactive({
@@ -28,18 +28,14 @@ const user = reactive({
   password: '',
 })
 
-const isTouched = ref(false)
-
-watch(user, () => {
-  isTouched.value = true
-}, { deep: true })
+const validation = ref(false)
 
 const validateEmail = computed(() => {
-  return isTouched.value && validate([rules.required, rules.emailFormat], user.email)
+  return validation.value && validate([rules.required, rules.emailFormat], user.email)
 })
 
 const validatePassword = computed(() => {
-  return isTouched.value && validate([rules.required, rules.passwordFormat], user.password)
+  return validation.value && validate([rules.required, rules.passwordFormat], user.password)
 })
 
 const isFormReady = computed(() => {
@@ -47,6 +43,8 @@ const isFormReady = computed(() => {
 })
 
 const signIn = async() => {
+  validation.value = true
+  if(!isFormReady.value) return;
   const res = await axios.post('/api/login', user);
   if(res.status == 200) return location.href = '/';
 }
