@@ -11,14 +11,22 @@
     <template v-slot:discards="{table}">
       <div class="center-display" v-if="table">
         <div v-if="isMaxPlayersReached && !isGameEndReached">
-          <div>{{ showGame }}</div>
-          <div v-if="!isAfterGameEnd">{{ showRound }}</div>
+          <div v-if="!isAfterGameEnd">
+            <div>{{ showGame }}</div>
+            <div>{{ showRound }}</div>
+          </div>
+          <div v-else>
+            winner: {{ getWinner.name }}
+          </div>
           <div v-if="time < 11">{{ time }}</div>
         </div>
         <div v-else>
           <form :action="'/api/table/' + table_id + '/exit'" method="post">
             <input type="submit" value="退出">
           </form>
+          <div v-if="isAfterGameEnd">
+            winner: {{ getWinner.name }}
+          </div>
         </div>
       </div>
     </template>
@@ -65,7 +73,7 @@ const isMaxPlayersReached = computed(() => {
 })
 
 const isAfterGameEnd = computed(() => {
-  return table.value.playerAggregate.players.every((player) => player.hand.cards == 5) && this.round == 0 && this.turn == 0;
+  return table.value.playerAggregate.players.every((player) => player.hand.cards.length == 5) && table.value.round == 0 && table.value.turn == 0;
 })
 
 const isGameEndReached = computed(() => {

@@ -128,8 +128,14 @@ class TableRule extends Controller {
             const tm = TableManagerFactory.create(cfg.mongoTable)
             const tablesJson = await tm.updateTableJson(endGameTable)
             await this.insertReplay(endGameTable)
-
-            this.WSTableResponse({table: endGameTable}, wss)
+            const start = Date.now();
+            const wsResponse: {[key: string]: any} = {table: endGameTable}
+            if(!endGameTable.isGameEndReached()) {
+                endGameTable.getPlayerIds().forEach((id) => {
+                    wsResponse[id] = {time: {start, timeout: this.timeout}}
+                })
+            }
+            this.WSTableResponse(wsResponse, wss)
 
             // ゲーム終了
             if(endGameTable.isGameEndReached()) {
@@ -169,7 +175,8 @@ class TableRule extends Controller {
                 await tm.updateTableJson(nextGameStartTable)
 
                 await this.insertReplay(nextGameStartTable)
-                this.WSTableResponse({table: nextGameStartTable}, wss)
+                const wssTable = cfg.server.getWSConnections(table.getPlayerIds())
+                this.setTurnTimer(nextGameStartTable, wssTable)
             }, this.timeout)
             return endGameTable
         }

@@ -69,6 +69,11 @@ class TableController extends TableRule {
                 return token
             }
 
+            if(table.isAfterGameEnd()) {
+                this.jsonResponse(res, {table})
+                return token
+            }
+
             const hidCardsTable = table.hideCards(token.user.user_id)
             const responseJson: any = {table: hidCardsTable}
             const playerInTurn = hidCardsTable.getPlayerInTurn()
