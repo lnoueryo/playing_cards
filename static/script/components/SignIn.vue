@@ -33,6 +33,7 @@ const isTouched = ref(false)
 watch(user, () => {
   isTouched.value = true
 }, { deep: true })
+
 const validateEmail = computed(() => {
   return isTouched.value && validate([rules.required, rules.emailFormat], user.email)
 })

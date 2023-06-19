@@ -7,7 +7,7 @@
       </div>
       <hr>
       <div class="text-end">
-        <a  @click="togglePage">{{ button }}ページへ→</a>
+        <a class="page-link" @click="togglePage">{{ button }}ページへ→</a>
       </div>
       <div class="d-grid gap-2 col-6 mx-auto">
       </div>
@@ -47,4 +47,15 @@ const signedUp = () => {
     left: 50%;
     transform: translate(-50%, -50%);
   }
+
+  .page-link {
+    cursor: pointer;
+    transition: all .3s;
+  }
+
+  .page-link:hover {
+    opacity: .5;
+    transition: all .3s;
+  }
+
 </style>
