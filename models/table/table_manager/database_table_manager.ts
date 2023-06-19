@@ -37,7 +37,6 @@ class DatabaseTableManager extends TableManager {
     async deleteTableJson(table: Table) {
         await this.adaptor.deleteTableJson(table);
         const tablesJson = await this.getTablesJson()
-        delete tablesJson[table.id]
         return tablesJson;
     }
 

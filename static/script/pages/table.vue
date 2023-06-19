@@ -154,8 +154,9 @@ const sortPlayers = (players) => {
 }
 
 const discard = async(card) => {
+  console.log(table_id)
   resetTimer()
-  const res = await axios.post('/api/table/' + user.value.table_id + '/next', card);
+  const res = await axios.post('/api/table/' + table_id.value + '/next', card);
 }
 
 // const reset = async() => {
@@ -183,6 +184,7 @@ const websocketHandler = (e) => {
   // テーブルのデータ
   if('table' in dataJson) {
     if(!dataJson.table) return location.href = '/'
+    console.log(dataJson)
     table.value = Table.createTable(dataJson.table)
   }
   // ユーザー特有の処理
